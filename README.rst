@@ -83,7 +83,7 @@ There is a test provided which will verify access to the platform based on the a
 Demo
 ---------------------------------
 
-The demo is located in the ```demo``` directory, and can be run by:
+The demo is located in the `demo` directory, and can be run by:
 
 - Creating a user to represent the aggregator
 - Creating one or more users to represent task participants
