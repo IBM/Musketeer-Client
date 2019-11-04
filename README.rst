@@ -83,7 +83,7 @@ There is a test provided which will verify access to the platform based on the a
 Demo
 ---------------------------------
 
-The demo is located in the ```demo``` directory, and can be run by:
+The demo is located in the ``demo`` directory, and can be run by:
 
 - Creating a user to represent the aggregator
 - Creating one or more users to represent task participants
@@ -115,10 +115,10 @@ Within the VM terminal, run:
 	jupyter notebook --ip=0.0.0.0 &
 
 
-Open `127.0.0.1:8881` in your host browser (Chrome or Firefox), enter the password you chose and then you should see the navigation tree.
+Open ``127.0.0.1:8881`` in your host browser (Chrome or Firefox), enter the password you chose and then you should see the navigation tree.
 
-Run the `task_creator.ipnyb` notebook for the workflow of a task creator / aggregator.
+Run the ``task_creator.ipnyb`` notebook for the workflow of a task creator / aggregator.
 
-Run the `task_participant.ipnyb` notebook for the workflow of a task participant.
+Run the ``task_participant.ipnyb`` notebook for the workflow of a task participant.
 
 
