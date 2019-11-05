@@ -4,4 +4,4 @@ python:
     - "3.6"
 script:
 - echo $PYCLOUDMESSENGER > ./creds.json
-- python3 -m pytest tests/basic.py --credentials=cfg -srx -s
+- python3 -m pytest tests/basic.py --credentials=./creds.json -srx -s
