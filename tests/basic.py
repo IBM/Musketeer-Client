@@ -46,15 +46,33 @@ LOGGER = logging.getLogger(__package__)
 class MessengerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        pass
+        cls.config_file = None
+
+        import os
+        cfg = os.environ.get('PYCLOUDMESSENGER')
+        if cfg is not None:
+            import json
+            jsn = json.loads(cfg)
+
+            cls.config_file = 'config.json'
+            with open(cls.config_file, 'w') as jout:
+                json.dump(jsn, jout)
 
     @classmethod
     def tearDownClass(cls):
-        pass
+        import os
+
+        cfg = os.environ.get('PYCLOUDMESSENGER')
+        if cfg is not None:
+            import os
+            os.remove(cls.config_file)
 
     #@unittest.skip("temporarily skipping")
     def test_get_tasks(self):
-        context = fflapi.Context.from_credentials_file(self.credentials)
+        if self.config_file is None:
+            self.config_file = self.credentials
+
+        context = fflapi.Context.from_credentials_file(self.config_file)
         user = fflapi.User(context)
         with user:
             result = user.get_tasks()
