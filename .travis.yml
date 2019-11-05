@@ -5,4 +5,4 @@ python:
 script:
 - echo $PYCLOUDMESSENGER > ./creds.json
 - python3 -m pytest tests/basic.py --credentials=./creds.json -srx -s
-
+- rm ./creds.json
