@@ -1,0 +1,8 @@
+sudo: false
+language: python
+python:
+    - "3.6"
+script:
+- echo $PYCLOUDMESSENGER > ./creds.json
+- python3 -m pytest tests/basic.py --credentials=./creds.json -srx -s
+
