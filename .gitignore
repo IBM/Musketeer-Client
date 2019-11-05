@@ -83,12 +83,14 @@ celerybeat-schedule
 
 # Environments
 .env
+.vagrant
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+bash_history
 
 # Spyder project settings
 .spyderproject
