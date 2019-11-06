@@ -73,7 +73,7 @@ class BasicParticipant:
         :param comms: A communication interface that enables communication between the aggregator and participants.
         :type comms: :class:`pycloudmessenger.ffl.fflapi.BasicParticipant`
         """        
-        self.quorum = task_definition['quorum']-1
+        self.quorum = task_definition['quorum']
         self.epoch = task_definition['epoch']
         self.batch_size = task_definition['batch_size']
         self.learning_rate = task_definition['learning_rate']
