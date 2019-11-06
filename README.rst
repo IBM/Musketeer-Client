@@ -1,6 +1,7 @@
 |travis-badge|
 
 .. |travis-badge| image:: https://travis-ci.com/IBM/Musketeer-Client.svg?branch=master
+.. _travis-badge: https://travis-ci.com/IBM/Musketeer-Client/
 
 ========================
 Musketeer Client-Package
