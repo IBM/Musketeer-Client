@@ -255,8 +255,9 @@ class Aggregator(BasicParticipant):
         LOGGER.info("Test accuracy %f" % accuracy)
             
         LOGGER.info('END')
+        return model
 
-    
+
 class Participant(BasicParticipant):
     """
     This class implements the functionality of the participant.
