@@ -81,6 +81,7 @@ class BasicParticipant:
         self.training_size = task_definition['training_size']
         self.test_size = task_definition['test_size']
         self.comms = comms
+        self.timeout = 600
 
     def load_data(self, train=True):
         """
@@ -179,7 +180,7 @@ class Aggregator(BasicParticipant):
         complete = False
         while not complete:
             try:
-                result = self.comms.receive(600)
+                result = self.comms.receive(self.timeout)
                 LOGGER.info('Received model update from participant')
 
             except fflapi.TimedOutException as err:
@@ -281,7 +282,7 @@ class Participant(BasicParticipant):
         """        
         try:
             with self.comms:
-                msg = self.comms.receive(600)
+                msg = self.comms.receive(self.timeout)
                 LOGGER.info("Received model architecture from the aggregator")
 
             rsp = self.get_result(msg)
@@ -299,7 +300,7 @@ class Participant(BasicParticipant):
         for iter in range(self.round):
             try:
                 with self.comms:
-                    msg = self.comms.receive(600)
+                    msg = self.comms.receive(self.timeout)
 
                 LOGGER.info("Round " + str(iter))
                 LOGGER.info('Received model update from the aggregator, start to update local model and train locally')
@@ -324,3 +325,15 @@ class Participant(BasicParticipant):
                 LOGGER.exception(consumer_ex)
 
         LOGGER.info('Finished %d rounds, done.' % self.round)
+        
+        try:
+            result = self.comms.receive(self.timeout)
+            LOGGER.info('Received model from aggregator')
+
+            if fflapi.Notification.is_aggregator_stopped(result):
+                rsp = self.get_result(result)
+                #Now we have the final model
+        except fflapi.TimedOutException as timeout:
+            LOGGER.exception(timeout)
+        except fflapi.ConsumerException as consumer_ex:
+            LOGGER.exception(consumer_ex)
