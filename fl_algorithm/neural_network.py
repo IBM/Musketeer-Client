@@ -115,15 +115,15 @@ class BasicParticipant:
         :rtype: `dict`
         """
         rsp = None
-        if 'params' in updates.keys():
-            if 'url' in updates['params'].keys():
+        if 'params' in updates:
+            if 'url' in updates['params']:
                 # get aggregator updates from cos
                 url = updates['params']['url']
                 rsp = requests.get(url)
 
         return rsp
 
-    
+
 class Aggregator(BasicParticipant):
     """
     This class implements the functionality of the aggregator.
@@ -254,9 +254,9 @@ class Aggregator(BasicParticipant):
         LOGGER.info('Finished %d rounds, done' % self.round)
         [_, accuracy] = model.evaluate(self.feature, self.label)
         LOGGER.info("Test accuracy %f" % accuracy)
-            
+
         LOGGER.info('END')
-        return model
+        return {'model_weights': json.dumps({'weights': model.get_weights()}, cls=NumpyEncoder)}
 
 
 class Participant(BasicParticipant):
@@ -325,15 +325,19 @@ class Participant(BasicParticipant):
                 LOGGER.exception(consumer_ex)
 
         LOGGER.info('Finished %d rounds, done.' % self.round)
-        
+
         try:
-            result = self.comms.receive(self.timeout)
-            LOGGER.info('Received model from aggregator')
+            with self.comms:
+                result = self.comms.receive(self.timeout)
 
             if fflapi.Notification.is_aggregator_stopped(result):
                 rsp = self.get_result(result)
+                weights = np.array(json.loads(json.loads(rsp.content)['model_weights'])['weights'])
+                model.set_weights(weights)
+                LOGGER.info('Received model from aggregator')
                 #Now we have the final model
         except fflapi.TimedOutException as timeout:
             LOGGER.exception(timeout)
         except fflapi.ConsumerException as consumer_ex:
             LOGGER.exception(consumer_ex)
+
