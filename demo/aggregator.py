@@ -31,6 +31,7 @@ Author: Tran Ngoc Minh (M.N.Tran@ibm.com).
 
 import argparse
 import logging
+import traceback
 
 import pycloudmessenger.ffl.fflapi as fflapi
 
@@ -102,14 +103,18 @@ def run(credentials, user, password, task_name):
 
     alg_class = get_class(task_definition['aggregator'])
     algorithm = alg_class(task_definition, aggregator)
+    model = None
 
     try:
-        algorithm.start()
+        model = algorithm.start()
     except Exception as e:
+        traceback.print_exc()
         LOGGER.error(str(e))
 
+    LOGGER.info('Dispatch final model to participants...')
+
     with aggregator:
-        aggregator.stop_task()
+        aggregator.stop_task(model)
 
     LOGGER.info('Completed training')
 

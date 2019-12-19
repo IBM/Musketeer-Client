@@ -81,6 +81,7 @@ class BasicParticipant:
         self.training_size = task_definition['training_size']
         self.test_size = task_definition['test_size']
         self.comms = comms
+        self.timeout = 600
 
     def load_data(self, train=True):
         """
@@ -114,15 +115,15 @@ class BasicParticipant:
         :rtype: `dict`
         """
         rsp = None
-        if 'params' in updates.keys():
-            if 'url' in updates['params'].keys():
+        if 'params' in updates:
+            if 'url' in updates['params']:
                 # get aggregator updates from cos
                 url = updates['params']['url']
                 rsp = requests.get(url)
 
         return rsp
 
-    
+
 class Aggregator(BasicParticipant):
     """
     This class implements the functionality of the aggregator.
@@ -179,7 +180,7 @@ class Aggregator(BasicParticipant):
         complete = False
         while not complete:
             try:
-                result = self.comms.receive(600)
+                result = self.comms.receive(self.timeout)
                 LOGGER.info('Received model update from participant')
 
             except fflapi.TimedOutException as err:
@@ -253,10 +254,11 @@ class Aggregator(BasicParticipant):
         LOGGER.info('Finished %d rounds, done' % self.round)
         [_, accuracy] = model.evaluate(self.feature, self.label)
         LOGGER.info("Test accuracy %f" % accuracy)
-            
-        LOGGER.info('END')
 
-    
+        LOGGER.info('END')
+        return {'model_weights': json.dumps({'weights': model.get_weights()}, cls=NumpyEncoder)}
+
+
 class Participant(BasicParticipant):
     """
     This class implements the functionality of the participant.
@@ -280,7 +282,7 @@ class Participant(BasicParticipant):
         """        
         try:
             with self.comms:
-                msg = self.comms.receive(600)
+                msg = self.comms.receive(self.timeout)
                 LOGGER.info("Received model architecture from the aggregator")
 
             rsp = self.get_result(msg)
@@ -298,7 +300,7 @@ class Participant(BasicParticipant):
         for iter in range(self.round):
             try:
                 with self.comms:
-                    msg = self.comms.receive(600)
+                    msg = self.comms.receive(self.timeout)
 
                 LOGGER.info("Round " + str(iter))
                 LOGGER.info('Received model update from the aggregator, start to update local model and train locally')
@@ -323,3 +325,19 @@ class Participant(BasicParticipant):
                 LOGGER.exception(consumer_ex)
 
         LOGGER.info('Finished %d rounds, done.' % self.round)
+
+        try:
+            with self.comms:
+                result = self.comms.receive(self.timeout)
+
+            if fflapi.Notification.is_aggregator_stopped(result):
+                rsp = self.get_result(result)
+                weights = np.array(json.loads(json.loads(rsp.content)['model_weights'])['weights'])
+                model.set_weights(weights)
+                LOGGER.info('Received model from aggregator')
+                #Now we have the final model
+        except fflapi.TimedOutException as timeout:
+            LOGGER.exception(timeout)
+        except fflapi.ConsumerException as consumer_ex:
+            LOGGER.exception(consumer_ex)
+

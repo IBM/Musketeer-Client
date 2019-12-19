@@ -31,6 +31,7 @@ Author: Tran Ngoc Minh (M.N.Tran@ibm.com).
 
 import argparse
 import logging
+import traceback
 
 import pycloudmessenger.ffl.fflapi as fflapi
 
@@ -106,6 +107,7 @@ def run(credentials, user, password, task_name):
     try:
         algorithm.start()
     except Exception as e:
+        traceback.print_exc()
         LOGGER.error(str(e))
 
     LOGGER.info('Completed training')
