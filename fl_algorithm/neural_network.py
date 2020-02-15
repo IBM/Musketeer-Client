@@ -36,7 +36,8 @@ from keras.datasets import mnist
 import numpy as np
 import json
 import requests
-import pycloudmessenger.ffl.fflapi as fflapi
+
+from demo import fflapi
 
 
 # Set up logger

@@ -32,7 +32,7 @@ Author: John D Sheehan (john.d.sheehan@ie.ibm.com)
 import argparse
 import logging
 
-import pycloudmessenger.ffl.fflapi as fflapi
+from demo import fflapi
 
 
 # Set up logger
