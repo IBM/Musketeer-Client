@@ -28,14 +28,12 @@ Author: Tran Ngoc Minh (M.N.Tran@ibm.com).
 import os
 import logging
 
+import numpy as np
 from keras.utils import to_categorical
 from keras import losses, optimizers
 from keras.models import model_from_json, Sequential
 from keras.layers import Conv2D, MaxPooling2D, Dense, Dropout, Flatten
 from keras.datasets import mnist
-import numpy as np
-import json
-import requests
 import pycloudmessenger.ffl.fflapi as fflapi
 
 
@@ -50,13 +48,6 @@ LOGGER.setLevel(logging.INFO)
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
-
-
-class NumpyEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return json.JSONEncoder.default(self, obj)
 
 
 class BasicParticipant:
@@ -104,25 +95,6 @@ class BasicParticipant:
 
         return x.reshape(x.shape[0], 28, 28, 1), to_categorical(y, 10)
 
-    @staticmethod
-    def get_result(updates):
-        """
-        Download utility from model service.
-
-        :param updates: Contain url for downloading.
-        :type updates: `dict`
-        :return: Downloaded data.
-        :rtype: `dict`
-        """
-        rsp = None
-        if 'params' in updates:
-            if 'url' in updates['params']:
-                # get aggregator updates from cos
-                url = updates['params']['url']
-                rsp = requests.get(url)
-
-        return rsp
-
 
 class Aggregator(BasicParticipant):
     """
@@ -151,7 +123,7 @@ class Aggregator(BasicParticipant):
 
         if results:
             if len(results) == self.quorum:
-                LOGGER.debug('workers have already joined')
+                LOGGER.debug('Workers have already joined')
                 return results
 
         LOGGER.info('Waiting on workers to join (%d of %d present)', len(results), self.quorum)
@@ -160,7 +132,7 @@ class Aggregator(BasicParticipant):
         while not ready:
             try:
                 with self.comms:
-                    result = self.comms.receive(300)
+                    result = self.comms.receive(self.timeout)
 
             except fflapi.TimedOutException as err:
                 raise err
@@ -219,10 +191,8 @@ class Aggregator(BasicParticipant):
 
         LOGGER.info('Distributing neural network architecture to participants')
 
-        model_json = json.dumps(model.to_json())
-
         with self.comms:
-            self.comms.send({'model': model_json})
+            self.comms.send({'model': model.to_json()})
 
         import time
         for iter in range(self.round):
@@ -231,17 +201,14 @@ class Aggregator(BasicParticipant):
             LOGGER.info("Round " + str(iter))
             LOGGER.info('Asking participants to update model weights, do local training and send back model update')
 
-            model_weights = json.dumps({'weights': model.get_weights()}, cls=NumpyEncoder)
-
             with self.comms:
-                self.comms.send({'model_weights': model_weights})
+                self.comms.send({'weights': model.get_weights()})
                 weight_updates = self.wait_for_workers_to_complete()
                 LOGGER.info('Received model updates from all participants, start updating the central model')
 
             list_updates = []
             for weight_update in weight_updates:
-                rsp = self.get_result(weight_update)
-                weight = json.loads(json.loads(rsp.content))['weight_update']
+                weight = weight_update['params']['updated_weights']
                 weight = np.array([np.array(w) for w in weight])
                 list_updates.append(weight)
 
@@ -256,7 +223,8 @@ class Aggregator(BasicParticipant):
         LOGGER.info("Test accuracy %f" % accuracy)
 
         LOGGER.info('END')
-        return {'model_weights': json.dumps({'weights': model.get_weights()}, cls=NumpyEncoder)}
+
+        return {'weights': model.get_weights()}
 
 
 class Participant(BasicParticipant):
@@ -285,9 +253,7 @@ class Participant(BasicParticipant):
                 msg = self.comms.receive(self.timeout)
                 LOGGER.info("Received model architecture from the aggregator")
 
-            rsp = self.get_result(msg)
-
-            model = model_from_json(json.loads(json.loads(rsp.content)['model']))
+            model = model_from_json(msg['params']['model'])
             model.compile(loss=losses.categorical_crossentropy,
                           optimizer=optimizers.Adam(lr=self.learning_rate),
                           metrics=['accuracy'])
@@ -305,19 +271,14 @@ class Participant(BasicParticipant):
                 LOGGER.info("Round " + str(iter))
                 LOGGER.info('Received model update from the aggregator, start to update local model and train locally')
 
-                rsp = self.get_result(msg)
-
-                weights = np.array(json.loads(json.loads(rsp.content)['model_weights'])['weights'])
-
+                weights = msg['params']['weights']
                 model.set_weights(weights)
                 model.fit(self.feature, self.label, batch_size=self.batch_size, epochs=self.epoch)
-
-                weight_update = model.get_weights()
-                weight_update_json = json.dumps({'weight_update': weight_update}, cls=NumpyEncoder)
+                updated_weights = model.get_weights()
 
                 LOGGER.info('Finished local training and send back model update to the aggregator')
                 with self.comms:
-                    self.comms.send(weight_update_json)
+                    self.comms.send({'updated_weights': updated_weights})
 
             except fflapi.TimedOutException as timeout:
                 LOGGER.exception(timeout)
@@ -331,13 +292,12 @@ class Participant(BasicParticipant):
                 result = self.comms.receive(self.timeout)
 
             if fflapi.Notification.is_aggregator_stopped(result):
-                rsp = self.get_result(result)
-                weights = np.array(json.loads(json.loads(rsp.content)['model_weights'])['weights'])
+                weights = result['params']['weights']
                 model.set_weights(weights)
-                LOGGER.info('Received model from aggregator')
-                #Now we have the final model
+
+                LOGGER.info('Received the final model from aggregator')
+
         except fflapi.TimedOutException as timeout:
             LOGGER.exception(timeout)
         except fflapi.ConsumerException as consumer_ex:
             LOGGER.exception(consumer_ex)
-

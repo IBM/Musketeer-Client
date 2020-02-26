@@ -96,15 +96,15 @@ def run(credentials, user, password, task_name):
         import json
         task_definition = json.loads(user.task_info()['definition'])
 
-    aggregator = fflapi.Aggregator(context, task_name=task_name, download_models=False)
+    aggregator = fflapi.Aggregator(context, task_name=task_name)
 
     import sys
     sys.path.append("../fl_algorithm")
 
     alg_class = get_class(task_definition['aggregator'])
     algorithm = alg_class(task_definition, aggregator)
-    model = None
 
+    model = None
     try:
         model = algorithm.start()
     except Exception as e:

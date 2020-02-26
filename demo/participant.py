@@ -96,7 +96,7 @@ def run(credentials, user, password, task_name):
         import json
         task_definition = json.loads(user.task_info()['definition'])
 
-    participant = fflapi.Participant(context, task_name=task_name, download_models=False)
+    participant = fflapi.Participant(context, task_name=task_name)
 
     import sys
     sys.path.append("../fl_algorithm")
