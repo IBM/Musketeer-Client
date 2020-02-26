@@ -33,7 +33,7 @@ Modified from creator.py
 import argparse
 import logging
 
-import pycloudmessenger.ffl.fflapi as fflapi
+from demo import fflapi
 
 
 # Set up logger

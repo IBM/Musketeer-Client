@@ -33,7 +33,7 @@ import argparse
 import logging
 import traceback
 
-import pycloudmessenger.ffl.fflapi as fflapi
+from demo import fflapi
 
 
 # Set up logger

@@ -34,7 +34,7 @@ from keras import losses, optimizers
 from keras.models import model_from_json, Sequential
 from keras.layers import Conv2D, MaxPooling2D, Dense, Dropout, Flatten
 from keras.datasets import mnist
-import pycloudmessenger.ffl.fflapi as fflapi
+from demo import fflapi
 
 
 # Set up logger

@@ -123,3 +123,10 @@ Run the ``task_creator.ipnyb`` notebook for the workflow of a task creator / agg
 Run the ``task_participant.ipnyb`` notebook for the workflow of a task participant.
 
 
+Local Mode
+---------------------------------
+To facilitate research, we support a local version of the Musketeer platform, which is developed on flask. This local version has an assumption that there is only one task running at a time. In order to run tasks locally, run and restart the following command per task:
+
+.. code-block::
+
+    python3 local_platform/musketeer.py
