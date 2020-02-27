@@ -17,8 +17,6 @@ definition = {}
 aggregator_queue = []
 participant_queue = {}
 participant_list = []
-aggregator_pool = []
-participant_pool = []
 task_name = []
 
 
@@ -27,12 +25,16 @@ def reset():
     """
     Clear in-memory database.
     """
+    global definition
+    global aggregator_queue
+    global participant_queue
+    global participant_list
+    global task_name
+
     definition = {}
     aggregator_queue = []
     participant_queue = {}
     participant_list = []
-    aggregator_pool = []
-    participant_pool = []
     task_name = []
 
     return make_response('', 200)
@@ -42,10 +44,10 @@ def reset():
 def create_task():
     from datetime import datetime
 
-    message = json.loads(request.args['message'])['arg']
+    message = request.args['message']
     task_name.append({'task_name': request.args['task_name'], 'status': 'CREATED',
                       'added': datetime.now().strftime('%Y-%m-%dT%H:%M:%S')})
-    definition.update({'definition': json.dumps(message)})
+    definition.update({'definition': message})
 
     return make_response('', 200)
 
@@ -75,7 +77,7 @@ def get_participants():
 
 @app.route('/aggregator_send', methods=['POST'])
 def aggregator_send():
-    message = json.loads(request.args['message'])['arg']
+    message = json.loads(request.args['message'])
     for user in participant_queue.keys():
         participant_queue[user].append(message)
 
@@ -95,9 +97,7 @@ def aggregator_receive():
 
             elif content[1] is Notification.participant_updated:
                 msg = {'notification': {'type': Notification.participant_updated}}
-                aggregator_pool.append(json.dumps(content[0]))
-                url = 'http://{}:{}/aggregator_get'.format(HOST, PORT)
-                result = {'params': {'url': url}}
+                result = {'params': content[0]}
                 result.update(msg)
 
             del aggregator_queue[0]
@@ -108,7 +108,7 @@ def aggregator_receive():
 
 @app.route('/participant_send', methods=['POST'])
 def participant_send():
-    message = json.loads(request.args['message'])['arg']
+    message = json.loads(request.args['message'])
     aggregator_queue.append((message, Notification.participant_updated))
 
     return make_response('', 200)
@@ -120,29 +120,11 @@ def participant_receive():
 
     while True:
         if len(participant_queue[user]) > 0:
-            participant_pool.append(participant_queue[user][0])
-            url = 'http://{}:{}/participant_get'.format(HOST, PORT)
-            result = {'params': {'url': url}}
+            result = {'params': participant_queue[user][0]}
             del participant_queue[user][0]
             break
 
     return make_response(jsonify({'message': result}), 200)
-
-
-@app.route('/participant_get', methods=['GET'])
-def participant_get():
-    result = participant_pool[0]
-    del participant_pool[0]
-
-    return result
-
-
-@app.route('/aggregator_get', methods=['GET'])
-def aggregator_get():
-    result = aggregator_pool[0]
-    del aggregator_pool[0]
-
-    return result
 
 
 if __name__ == "__main__":

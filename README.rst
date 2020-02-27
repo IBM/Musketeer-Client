@@ -125,7 +125,7 @@ Run the ``task_participant.ipnyb`` notebook for the workflow of a task participa
 
 Local Mode
 ---------------------------------
-To facilitate research, we support a local version of the Musketeer platform, which is developed on flask. This local version has an assumption that there is only one task running at a time. In order to run tasks locally, run and restart the following command per task:
+To facilitate research, we support a local version of the Musketeer platform, which is developed on flask. This local version has an assumption that there is only one task running at a time. In order to run tasks locally, run the following command:
 
 .. code-block::
 

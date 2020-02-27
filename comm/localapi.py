@@ -29,22 +29,14 @@ import requests
 from enum import Enum
 import base64
 import pickle
+import numpy as np
 
 
-def is_jsonable(x):
-    """
-    Checks whether a given object can be serialized via json.dumps.
-
-    :param x: Object to be serialized
-    :type x: arbitrary (typically a dictionary)
-    :return: Whether or not the object can be seralized
-    :rtype: boolean
-    """
-    try:
-        json.dumps(x)
-        return True
-    except:
-        return False
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
 
 
 def serialize(x):
@@ -165,6 +157,9 @@ class Notification(str, Enum):
         return self.value
 
 
+participant_list = []
+
+
 class BasicParticipant:
     """
     Base class for an FFL general user.
@@ -238,12 +233,14 @@ class User(BasicParticipant):
         :return: details of the created task
         :rtype: `dict`
         """
-        if is_jsonable(definition):
-            message = {'serialized': False, 'arg': definition.copy()}
-        else:
-            message = {'serialized': True, 'arg': serialize(definition.copy())}
+        # First reset the local platform as we only allow it to serve 1 task at a time
+        global participant_list
+        participant_list = []
+        requests.post(self.path + 'reset')
 
-        payload = {'message': json.dumps(message), 'task_name': self.task_name}
+        # Then create a new task
+        message = json.dumps(definition, cls=NumpyEncoder)
+        payload = {'message': message, 'task_name': self.task_name}
         r = requests.post(self.path + 'create_task', params=payload)
 
         return {self.task_name: r}
@@ -300,9 +297,8 @@ class Aggregator(BasicParticipant):
     """
     This class provides the functionality needed by the aggregator of a federated learning task.
     """
-    participant_list = []
 
-    def __init__(self, context, task_name=None, download_models=True):
+    def __init__(self, context, task_name=None):
         """
         Class initializer.
         Throws: An exception on failure
@@ -327,14 +323,16 @@ class Aggregator(BasicParticipant):
         """
         r = requests.get(self.path + 'get_participants', params={})
 
+        global participant_list
+
         if r.status_code == requests.codes.ok:
-            participant_list = json.loads(r.text)['message']
+            participants = json.loads(r.text)['message']
         else:
             raise Exception('Unexpected status code when receiving message: %i' % r.status_code)
 
-        self.participant_list.extend(participant_list)
+        participant_list.extend(participants)
 
-        return self.participant_list
+        return participant_list
 
     def send(self, message=None):
         """
@@ -344,12 +342,8 @@ class Aggregator(BasicParticipant):
         :param message: message to be sent (needs to be serializable into json string)
         :type message: `dict`
         """
-        if is_jsonable(message):
-            message = {'serialized': False, 'arg': message}
-        else:
-            message = {'serialized': True, 'arg': serialize(message)}
-
-        payload = {'message': json.dumps(message)}
+        message = json.dumps(message, cls=NumpyEncoder)
+        payload = {'message': message}
         requests.post(self.path + 'aggregator_send', params=payload)
 
     def receive(self, timeout=0):
@@ -364,6 +358,8 @@ class Aggregator(BasicParticipant):
         """
         start = time.time()
 
+        global participant_list
+
         while time.time() - start < timeout:
             r = requests.get(self.path + 'aggregator_receive', params={})
 
@@ -371,11 +367,11 @@ class Aggregator(BasicParticipant):
                 result = json.loads(r.text)['message']
 
                 if isinstance(result, list) and result[0] == Notification.participant_joined:
-                    self.participant_list.append(result[1])
+                    participant_list.append(result[1])
 
                 return result
 
-        raise TimedOutException('Timeout when receiving data (%f over %f seconds)' % ((time.time()-start), timeout))
+        raise TimedOutException('Timeout when receiving data (%f over %f seconds)' % ((time.time() - start), timeout))
 
     def stop_task(self, model=None):
         """
@@ -391,7 +387,7 @@ class Participant(BasicParticipant):
     This class provides the functionality needed by the participants of a federated learning task.
     """
 
-    def __init__(self, context, task_name=None, download_models=True):
+    def __init__(self, context, task_name=None):
         """
         Class initializer.
         Throws: An exception on failure
@@ -414,12 +410,8 @@ class Participant(BasicParticipant):
         :param message: message to be sent (needs to be serializable into json string)
         :type message: `dict`
         """
-        if is_jsonable(message):
-            message = {'serialized': False, 'arg': message}
-        else:
-            message = {'serialized': True, 'arg': serialize(message)}
-
-        payload = {'message': json.dumps(message)}
+        message = json.dumps(message, cls=NumpyEncoder)
+        payload = {'message': message}
         requests.post(self.path + 'participant_send', params=payload)
 
     def receive(self, timeout=0):
@@ -434,11 +426,11 @@ class Participant(BasicParticipant):
         """
         start = time.time()
 
-        while time.time()-start < timeout:
+        while time.time() - start < timeout:
             r = requests.get(self.path + 'participant_receive', params={'user': self.user})
 
             if r.status_code == requests.codes.ok:
                 result = json.loads(r.text)['message']
                 return result
 
-        raise TimedOutException('Timeout when receiving data (%f over %f seconds)' % ((time.time()-start), timeout))
+        raise TimedOutException('Timeout when receiving data (%f over %f seconds)' % ((time.time() - start), timeout))
