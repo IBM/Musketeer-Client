@@ -125,3 +125,4 @@ Run the ``task_participant.ipnyb`` notebook for the workflow of a task participa
 
 This project has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 824988. https://musketeer.eu/
 
+![HorizonH2020](/EU.png)
