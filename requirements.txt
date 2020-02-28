@@ -1,6 +1,6 @@
 requests
 setuptools>=41.0.0
-tensorflow==1.15.0rc1
+tensorflow==1.15.2
 keras==2.2.5
 scikit-learn
 git+https://github.com/IBM/pycloudmessenger.git@master
