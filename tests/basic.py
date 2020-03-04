@@ -52,7 +52,7 @@ class MessengerTests(unittest.TestCase):
     def tearDownClass(cls):
         pass
 
-    #@unittest.skip("temporarily skipping")
+    @unittest.skip("temporarily skipping")
     def test_get_tasks(self):
         context = fflapi.Context.from_credentials_file(self.credentials)
         user = fflapi.User(context)
