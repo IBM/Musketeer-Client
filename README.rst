@@ -132,3 +132,7 @@ To facilitate research, we support a local version of the Musketeer platform, wh
     python3 local_platform/musketeer.py
 
 Note that, it is easy to switch between `local` and `cloud` platforms by changing the `config` file as follows: `{"platform": "local"}` for local platform and `{"platform": "cloud"}` for cloud platform.
+
+This project has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 824988. https://musketeer.eu/
+
+.. image:: /EU.png
