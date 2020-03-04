@@ -29,61 +29,71 @@ Author: John D Sheehan (john.d.sheehan@ie.ibm.com)
 # to run:
 # python3 listing.py --credentials <>
 
+import sys
+sys.path.append("..")
+
 import argparse
 import logging
 
-from demo import fflapi
+from demo import ffl
+from demo import platform
 
 
 # Set up logger
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.ERROR,
     format='%(asctime)s.%(msecs)03d %(levelname)-6s %(name)s %(thread)d :: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S')
 
-LOGGER = logging.getLogger('creator')
+LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.DEBUG)
 
 
 def args_parse():
     """
     Parse command line args.
-    :return: namespace of key/value cmdline args
+
+    :return: namespace of key/value cmdline args.
     :rtype: `namespace`
     """
-    parser = argparse.ArgumentParser(description='Musketeer user registration')
+    parser = argparse.ArgumentParser(description='Musketeer task list')
     parser.add_argument('--credentials', required=True, help='Original credentials file from IBM')
     cmdline = parser.parse_args()
+
     return cmdline
 
 
 def get_tasks(credentials):
     """
     Get a list of all the tasks.
+
     :param credentials: json file containing credentials.
     :type credentials: `str`
-    :return: list of all the tasks, each of which is a dictionary
+    :return: list of all the tasks, each of which is a dictionary.
     :rtype: `list`
-
     """
-    context = fflapi.Context.from_credentials_file(credentials)
-    with fflapi.User(context) as ffl:
-        tasks = ffl.get_tasks()
+    context = ffl.Factory.context(platform, credentials)
+    user = ffl.Factory.user(context)
+
+    with user:
+        tasks = user.get_tasks()
 
     return tasks
 
 
 def main():
     """
-    Main entry point
+    Main entry point.
     """
     try:
         cmdline = args_parse()
         tasks = get_tasks(cmdline.credentials)
+
         for task in tasks:
             LOGGER.info(f"{task['task_name']} - {task['status']}")
+
     except Exception as err:
-        LOGGER.error('error: %s', err)
+        LOGGER.error('Error: %s', err)
 
 
 if __name__ == '__main__':

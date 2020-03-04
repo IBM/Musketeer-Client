@@ -29,26 +29,31 @@ Author: John D Sheehan (john.d.sheehan@ie.ibm.com)
 # to run:
 # python3 register.py --credentials <> --user <> --password <> --org <>
 
+import sys
+sys.path.append("..")
+
 import argparse
 import logging
 
-from demo import fflapi
+from demo import ffl
+from demo import platform
 
 
 # Set up logger
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.ERROR,
     format='%(asctime)s.%(msecs)03d %(levelname)-6s %(name)s %(thread)d :: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S')
 
-LOGGER = logging.getLogger('creator')
+LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.DEBUG)
 
 
 def args_parse():
     """
     Parse command line args.
-    :return: namespace of key/value cmdline args
+
+    :return: namespace of key/value cmdline args.
     :rtype: `namespace`
     """
     parser = argparse.ArgumentParser(description='Musketeer user registration')
@@ -57,36 +62,42 @@ def args_parse():
     parser.add_argument('--password', required=True)
     parser.add_argument('--org', required=True, help='Your organisation')
     cmdline = parser.parse_args()
+
     return cmdline
 
 
 def create_user(credentials, user, password, org):
     """
     Create the user to communicate with FFL.
+
     :param credentials: json file containing credentials.
     :type credentials: `str`
-    :param user: user name (must be unique)
+    :param user: user name (must be unique).
     :type user: `str`
-    :param password: password
+    :param password: password.
     :type password: `str`
-    :param org: organization the user belongs to
+    :param org: organization the user belongs to.
     :type org: `str`
     """
-    context = fflapi.Context.from_credentials_file(credentials)
-    with fflapi.User(context) as ffl:
-        ffl.create_user(user, password, org)
+    context = ffl.Factory.context(platform, credentials)
+    ffl_user = ffl.Factory.user(context)
+
+    with ffl_user:
+        ffl_user.create_user(user, password, org)
+        LOGGER.info('user %s created', user)
 
 
 def main():
     """
-    Main entry point
+    Main entry point.
     """
     try:
         cmdline = args_parse()
         create_user(cmdline.credentials, cmdline.user, cmdline.password, cmdline.org)
-        LOGGER.info('user %s created', cmdline.user)
+        LOGGER.info('User %s created', cmdline.user)
+
     except Exception as err:
-        LOGGER.error('error: %s', err)
+        LOGGER.error('Error: %s', err)
 
 
 if __name__ == '__main__':

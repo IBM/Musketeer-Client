@@ -30,10 +30,14 @@ Modified from worker.py
 # to run:
 # python3 join.py --credentials <> --user <> --password <> --task_name <>
 
+import sys
+sys.path.append("..")
+
 import argparse
 import logging
 
-from demo import fflapi
+from demo import ffl
+from demo import platform
 
 
 # Set up logger
@@ -42,17 +46,18 @@ logging.basicConfig(
     format='%(asctime)s.%(msecs)03d %(levelname)-6s %(name)s %(thread)d :: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S')
 
-LOGGER = logging.getLogger('worker_pom1_nn')
+LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.DEBUG)
 
 
 def args_parse():
     """
     Parse command line args.
-    :return: namespace of key/value cmdline args
+
+    :return: namespace of key/value cmdline args.
     :rtype: `namespace`
     """
-    parser = argparse.ArgumentParser(description='musketeer worker')
+    parser = argparse.ArgumentParser(description='Musketeer task join')
     parser.add_argument('--credentials', required=True)
     parser.add_argument('--task_name', required=True)
     parser.add_argument('--user', required=True)
@@ -65,17 +70,18 @@ def args_parse():
 def join_task(credentials, user, password, task_name):
     """
     Join a Federated ML task.
+
     :param credentials: json file containing credentials.
     :type credentials: `str`
-    :param user: user name for authentication as task creator
+    :param user: user name for authentication as task creator.
     :type user: `str`
-    :param password: password for authentication as task creator
+    :param password: password for authentication as task creator.
     :type password: `str`
-    :param task_name: name of the task (must be unique)
+    :param task_name: name of the task (must be unique).
     :type task_name: `str`
     """
-    context = fflapi.Context.from_credentials_file(credentials, user, password)
-    user = fflapi.User(context, task_name=task_name)
+    context = ffl.Factory.context(platform, credentials, user, password)
+    user = ffl.Factory.user(context, task_name=task_name)
 
     with user:
         user.join_task()
@@ -84,34 +90,35 @@ def join_task(credentials, user, password, task_name):
 def get_user_assignments(credentials, user, password):
     """
     Retrieve a list of all the tasks the user is participating in.
+
     :param credentials: json file containing credentials.
     :type credentials: `str`
-    :param user: user name for authentication as task creator
+    :param user: user name for authentication as task creator.
     :type user: `str`
-    :param password: password for authentication as task creator
+    :param password: password for authentication as task creator.
     :type password: `str`
-    :return: list of all the tasks the user is participating in
+    :return: list of all the tasks the user is participating in.
     :rtype: `list`
     """
-    context = fflapi.Context.from_credentials_file(credentials, user, password)
-    user = fflapi.User(context)
+    context = ffl.Factory.context(platform, credentials, user, password)
+    user = ffl.Factory.user(context)
 
     with user:
-        return user.messenger.user_assignments()
+        return user.get_joined_tasks()
 
 
 def main():
     """
-    Main entry point
+    Main entry point.
     """
     try:
         cmdline = args_parse()
 
         join_task(cmdline.credentials, cmdline.user, cmdline.password, cmdline.task_name)
-        LOGGER.debug('joined task')
+        LOGGER.debug('Joined task')
 
     except Exception as err:
-        LOGGER.error('error: %s', err)
+        LOGGER.error('Error: %s', err)
         raise err
 
 

@@ -5,7 +5,8 @@ from flask import Flask, make_response, request, jsonify
 
 from comm.localapi import Notification
 
-HOST = 'localhost'
+
+HOST = '127.0.0.1'
 PORT = 5000
 
 app = Flask(__name__)
@@ -60,6 +61,14 @@ def task_info():
 @app.route('/get_tasks', methods=['GET'])
 def get_tasks():
     return make_response(jsonify({'message': task_name}), 200)
+
+
+@app.route('/get_joined_tasks', methods=['GET'])
+def get_joined_tasks():
+    user = request.args['message']
+    result = task_name if user in participant_list else []
+
+    return make_response(jsonify({'message': result}), 200)
 
 
 @app.route('/join_task', methods=['POST'])
@@ -128,4 +137,4 @@ def participant_receive():
 
 
 if __name__ == "__main__":
-    app.run(host=HOST, port=PORT, debug=False)
+    app.run(host=HOST, port=PORT, debug=False, threaded=True)

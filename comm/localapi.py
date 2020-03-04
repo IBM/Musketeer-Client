@@ -24,12 +24,13 @@ limitations are in force until 30/11/2025.
  limitations under the License.
 """
 import time
-import json
 import requests
 from enum import Enum
-import base64
-import pickle
+
+import json
 import numpy as np
+
+import pycloudmessenger.ffl.abstractions as fflabc
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -37,18 +38,6 @@ class NumpyEncoder(json.JSONEncoder):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
-
-
-def serialize(x):
-    """
-    Serialize a given object.
-
-    :param x: Object to be serialized
-    :type x: arbitrary (typically a dictionary)
-    :return: Serialized object
-    :rtype: string
-    """
-    return base64.b64encode(pickle.dumps(x)).decode('utf-8')
 
 
 class TimedOutException(Exception):
@@ -63,20 +52,23 @@ class ConsumerException(Exception):
     """
 
 
-class Context:
+class Context(dict):
     """
     A faked class pretending to hold connection details for an FFL service.
     """
-    @staticmethod
-    def from_credentials_file(credentials, user=None, password=None):
-        with open(credentials, 'r') as f:
-            context = json.load(f)
-        context.update({'user': user})
 
-        return context
+    def __init__(self, config, *args, **kwargs):
+        self.update(config)
+
+        if len(args) > 0:
+            user = args[0]
+        else:
+            user = kwargs.get('user')
+
+        self.update({'user': user})
 
 
-class Topology(str, Enum):
+class Topology(str):
     """
     Class representing FFL task topologies.
     """
@@ -101,11 +93,11 @@ class Notification(str, Enum):
         """
         Check if msg is a particular notification.
 
-        :param msg: message to be checked
+        :param msg: message to be checked.
         :type msg: `dict`
-        :param notification: notification to be compared against
+        :param notification: notification to be compared against.
         :type notification: `str`
-        :return: True if yes, False otherwise
+        :return: True if yes, False otherwise.
         :rtype: `bool`
         """
         try:
@@ -122,9 +114,9 @@ class Notification(str, Enum):
         """
         Check if msg is an 'aggregator_stopped' notification.
 
-        :param msg: message to be checked
+        :param msg: message to be checked.
         :type msg: `dict`
-        :return: True if yes, False otherwise
+        :return: True if yes, False otherwise.
         :rtype: `bool`
         """
         return cls.is_notification(msg, cls.aggregator_stopped)
@@ -134,9 +126,9 @@ class Notification(str, Enum):
         """
         Check if msg is a 'participant_joined' notification.
 
-        :param msg: message to be checked
+        :param msg: message to be checked.
         :type msg: `dict`
-        :return: True if yes, False otherwise
+        :return: True if yes, False otherwise.
         :rtype: `bool`
         """
         return cls.is_notification(msg, cls.participant_joined)
@@ -146,9 +138,9 @@ class Notification(str, Enum):
         """
         Check if msg is a 'participant_updated' notification.
 
-        :param msg: message to be checked
+        :param msg: message to be checked.
         :type msg: `dict`
-        :return: True if yes, False otherwise
+        :return: True if yes, False otherwise.
         :rtype: `bool`
         """
         return cls.is_notification(msg, cls.participant_updated)
@@ -169,9 +161,9 @@ class BasicParticipant:
         """
         Class initializer.
 
-        :param context: connection details
+        :param context: connection details.
         :type context: :class:`.Context`
-        :param task_name: name of the task
+        :param task_name: name of the task.
         :type task_name: `str`
         """
         self.context = context
@@ -184,7 +176,7 @@ class BasicParticipant:
     def __enter__(self):
         """
         Context manager enters - call connect.
-        Throws: An exception on failure
+        Throws: An exception on failure.
 
         :return: self
         :rtype: :class:`.BasicParticipant`
@@ -193,13 +185,13 @@ class BasicParticipant:
 
     def __exit__(self, *args):
         """
-        Context manager exits - call close
-        Throws: An exception on failure
+        Context manager exits - call close.
+        Throws: An exception on failure.
         """
         pass
 
 
-class User(BasicParticipant):
+class User(fflabc.AbstractUser, BasicParticipant):
     """
     Class that allows a general user to avail of the FFL platform services.
     """
@@ -207,15 +199,15 @@ class User(BasicParticipant):
     def create_user(self, user_name, password, organisation):
         """
         Register a new user on the platform.
-        Throws: An exception on failure
+        Throws: An exception on failure.
 
         :param user_name: user name (must be a non-empty string and unique;
                                      if a user with this name has registered
                                      before, an exception is thrown).
         :type user_name: `str`
-        :param password: password (must be a non-empty string)
+        :param password: password (must be a non-empty string).
         :type password: `str`
-        :param organisation: name of the user's organisation
+        :param organisation: name of the user's organisation.
         :type organisation: `str`
         """
         pass
@@ -224,13 +216,13 @@ class User(BasicParticipant):
         """
         Creates a task with the given definition and returns a dictionary
         with the details of the created tasks.
-        Throws: An exception on failure
+        Throws: An exception on failure.
 
-        :param topology: topology of the task participants' communication network
+        :param topology: topology of the task participants' communication network.
         :type topology: `str`
-        :param definition: definition of the task to be created
+        :param definition: definition of the task to be created.
         :type definition: `dict`
-        :return: details of the created task
+        :return: details of the created task.
         :rtype: `dict`
         """
         # First reset the local platform as we only allow it to serve 1 task at a time
@@ -248,9 +240,9 @@ class User(BasicParticipant):
     def task_info(self):
         """
         Returns the details of a given task.
-        Throws: An exception on failure
+        Throws: An exception on failure.
 
-        :return: details of the task
+        :return: details of the task.
         :rtype: `dict`
         """
         r = requests.get(self.path + 'task_info', params={})
@@ -265,9 +257,9 @@ class User(BasicParticipant):
     def join_task(self):
         """
         As a potential task participant, try to join an existing task that has yet to start.
-        Throws: An exception on failure
+        Throws: An exception on failure.
 
-        :return: details of the task assignment
+        :return: details of the task assignment.
         :rtype: `dict`
         """
         payload = {'message': self.user}
@@ -278,9 +270,9 @@ class User(BasicParticipant):
     def get_tasks(self):
         """
         Returns a list with all the available tasks.
-        Throws: An exception on failure
+        Throws: An exception on failure.
 
-        :return: list of all the available tasks
+        :return: list of all the available tasks.
         :rtype: `list`
         """
         r = requests.get(self.path + 'get_tasks', params={})
@@ -292,8 +284,26 @@ class User(BasicParticipant):
 
         return task_name
 
+    def get_joined_tasks(self):
+        """
+        Returns a list with all the joined tasks.
+        Throws: An exception on failure.
 
-class Aggregator(BasicParticipant):
+        :return: list of all the available tasks.
+        :rtype: `list`
+        """
+        payload = {'message': self.user}
+        r = requests.get(self.path + 'get_joined_tasks', params=payload)
+
+        if r.status_code == requests.codes.ok:
+            joined_tasks = json.loads(r.text)['message']
+        else:
+            raise Exception('Unexpected status code when receiving message: %i' % r.status_code)
+
+        return joined_tasks
+
+
+class Aggregator(fflabc.AbstractAggregator, BasicParticipant):
     """
     This class provides the functionality needed by the aggregator of a federated learning task.
     """
@@ -301,14 +311,14 @@ class Aggregator(BasicParticipant):
     def __init__(self, context, task_name=None):
         """
         Class initializer.
-        Throws: An exception on failure
+        Throws: An exception on failure.
 
-        :param context: Connection details
+        :param context: Connection details.
         :type context: :class:`.Context`
-        :param task_name: Name of the task (note: the user must be the creator of this task)
+        :param task_name: Name of the task (note: the user must be the creator of this task).
         :type task_name: `str`
         :param download_models: Whether downloaded model file name or model url should
-                                be returned by receive function
+                                be returned by receive function.
         :type download_models: `bool`
         """
         super().__init__(context, task_name)
@@ -316,9 +326,9 @@ class Aggregator(BasicParticipant):
     def get_participants(self):
         """
         Return a list of participants.
-        Throws: An exception on failure
+        Throws: An exception on failure.
 
-        :return participant: list of participants
+        :return participant: list of participants.
         :rtype participant: `dict`
         """
         r = requests.get(self.path + 'get_participants', params={})
@@ -337,9 +347,9 @@ class Aggregator(BasicParticipant):
     def send(self, message=None):
         """
         Send a message to all task participants and return immediately (not waiting for a reply).
-        Throws: An exception on failure
+        Throws: An exception on failure.
 
-        :param message: message to be sent (needs to be serializable into json string)
+        :param message: message to be sent (needs to be serializable into json string).
         :type message: `dict`
         """
         message = json.dumps(message, cls=NumpyEncoder)
@@ -349,11 +359,11 @@ class Aggregator(BasicParticipant):
     def receive(self, timeout=0):
         """
         Wait for a message to arrive or until timeout period is exceeded.
-        Throws: An exception on failure
+        Throws: An exception on failure.
 
-        :param timeout: timeout in seconds
+        :param timeout: timeout in seconds.
         :type timeout: `int`
-        :return: received message
+        :return: received message.
         :rtype: `dict`
         """
         start = time.time()
@@ -377,12 +387,12 @@ class Aggregator(BasicParticipant):
         """
         As a task creator, stop the given task.
         The status of the task will be changed to 'COMPLETE'.
-        Throws: An exception on failure
+        Throws: An exception on failure.
         """
         self.send(message=model)
 
 
-class Participant(BasicParticipant):
+class Participant(fflabc.AbstractParticipant, BasicParticipant):
     """
     This class provides the functionality needed by the participants of a federated learning task.
     """
@@ -390,14 +400,14 @@ class Participant(BasicParticipant):
     def __init__(self, context, task_name=None):
         """
         Class initializer.
-        Throws: An exception on failure
+        Throws: An exception on failure.
 
-        :param context: connection details
+        :param context: connection details.
         :type context: :class:`.Context`
         :param task_name: name of the task (the user needs to be a participant of this task).
         :type task_name: `str`
         :param download_models: whether downloaded model file name or model url should
-                                be returned by receive function
+                                be returned by receive function.
         :type download_models: `bool`
         """
         super().__init__(context, task_name)
@@ -405,9 +415,9 @@ class Participant(BasicParticipant):
     def send(self, message=None):
         """
         Send a message to the aggregator and return immediately (not waiting for a reply).
-        Throws: An exception on failure
+        Throws: An exception on failure.
 
-        :param message: message to be sent (needs to be serializable into json string)
+        :param message: message to be sent (needs to be serializable into json string).
         :type message: `dict`
         """
         message = json.dumps(message, cls=NumpyEncoder)
@@ -417,11 +427,11 @@ class Participant(BasicParticipant):
     def receive(self, timeout=0):
         """
         Wait for a message to arrive or until timeout period is exceeded.
-        Throws: An exception on failure
+        Throws: An exception on failure.
 
-        :param timeout: timeout in seconds
+        :param timeout: timeout in seconds.
         :type timeout: `int`
-        :return: received message
+        :return: received message.
         :rtype: `dict`
         """
         start = time.time()
@@ -434,3 +444,10 @@ class Participant(BasicParticipant):
                 return result
 
         raise TimedOutException('Timeout when receiving data (%f over %f seconds)' % ((time.time() - start), timeout))
+
+    def leave_task(self):
+        """
+        As a task participant, leave the given task.
+        Throws: An exception on failure.
+        """
+        pass

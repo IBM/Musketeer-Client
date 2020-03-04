@@ -29,11 +29,16 @@ Author: Tran Ngoc Minh (M.N.Tran@ibm.com).
 # to run:
 # python3 participant.py --credentials <> --user <> --password <> --task_name <>
 
+import sys
+sys.path.append("..")
+
 import argparse
 import logging
 import traceback
 
-from demo import fflapi
+from demo import ffl
+from demo import platform
+from demo.aggregator import get_class
 
 
 # Set up logger
@@ -42,17 +47,18 @@ logging.basicConfig(
     format='%(asctime)s.%(msecs)03d %(levelname)-6s %(name)s %(thread)d :: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S')
 
-LOGGER = logging.getLogger('participant')
+LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.DEBUG)
 
 
 def args_parse():
     """
     Parse command line args.
-    :return: namespace of key/value cmdline args
+
+    :return: namespace of key/value cmdline args.
     :rtype: `namespace`
     """
-    parser = argparse.ArgumentParser(description='musketeer worker')
+    parser = argparse.ArgumentParser(description='Musketeer participant')
     parser.add_argument('--credentials', required=True)
     parser.add_argument('--task_name', required=True)
     parser.add_argument('--user', required=True)
@@ -62,41 +68,27 @@ def args_parse():
     return cmdline
 
 
-def get_class(class_name):
-    """
-    Get a class module from its name.
-    :param class_name: Full name of a class.
-    :type class_name: `str`
-    :return: The class `module`.
-    :rtype: `module`
-    """
-    sub_mods = class_name.split(".")
-    module_ = __import__(".".join(sub_mods[:-1]), fromlist=sub_mods[-1])
-    class_module = getattr(module_, sub_mods[-1])
-
-    return class_module
-
-
 def run(credentials, user, password, task_name):
     """
     Run the algorithm for the given task as participant.
+
     :param credentials: json file containing credentials.
     :type credentials: `str`
-    :param user: user name for authentication as task creator
+    :param user: user name for authentication as task creator.
     :type user: `str`
-    :param password: password for authentication as task creator
+    :param password: password for authentication as task creator.
     :type password: `str`
-    :param task_name: training task to be performed
+    :param task_name: training task to be performed.
     :type task_name: `str`
     """
-    context = fflapi.Context.from_credentials_file(credentials, user, password)
-    user = fflapi.User(context, task_name=task_name)
+    context = ffl.Factory.context(platform, credentials, user, password)
+    user = ffl.Factory.user(context, task_name=task_name)
 
     with user:
         import json
         task_definition = json.loads(user.task_info()['definition'])
 
-    participant = fflapi.Participant(context, task_name=task_name)
+    participant = ffl.Factory.participant(context, task_name=task_name)
 
     import sys
     sys.path.append("../fl_algorithm")
@@ -106,16 +98,17 @@ def run(credentials, user, password, task_name):
 
     try:
         algorithm.start()
+
     except Exception as e:
         traceback.print_exc()
         LOGGER.error(str(e))
 
-    LOGGER.info('Completed training')
+    LOGGER.info('Completed training !!!')
 
 
 def main():
     """
-    Main entry point
+    Main entry point.
     """
     try:
         cmdline = args_parse()
@@ -126,7 +119,7 @@ def main():
             cmdline.task_name)
 
     except Exception as err:
-        LOGGER.error('error: %s', err)
+        LOGGER.error('Error: %s', err)
         raise err
 
 

@@ -34,6 +34,7 @@ from keras import losses, optimizers
 from keras.models import model_from_json, Sequential
 from keras.layers import Conv2D, MaxPooling2D, Dense, Dropout, Flatten
 from keras.datasets import mnist
+
 from demo import fflapi
 
 
@@ -43,7 +44,7 @@ logging.basicConfig(
     format='%(asctime)s.%(msecs)03d %(levelname)-6s %(name)s %(thread)d :: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S')
 
-LOGGER = logging.getLogger('fl_training')
+LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'

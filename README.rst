@@ -130,3 +130,5 @@ To facilitate research, we support a local version of the Musketeer platform, wh
 .. code-block::
 
     python3 local_platform/musketeer.py
+
+Note that, it is easy to switch between `local` and `cloud` platforms by changing the `config` file as follows: `{"platform": "local"}` for local platform and `{"platform": "cloud"}` for cloud platform.

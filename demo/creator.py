@@ -30,10 +30,15 @@ Modified from creator.py
 # to run:
 # python3 creator.py --credentials <> --user <> --password <> --task_name <>
 
+import sys
+sys.path.append("..")
+
 import argparse
 import logging
 
-from demo import fflapi
+from demo import ffl
+from demo import platform
+from demo import topology
 
 
 # Set up logger
@@ -42,17 +47,18 @@ logging.basicConfig(
     format='%(asctime)s.%(msecs)03d %(levelname)-6s %(name)s %(thread)d :: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S')
 
-LOGGER = logging.getLogger('creator_pom1_nn')
+LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.DEBUG)
 
 
 def args_parse():
     """
     Parse command line args.
-    :return: namespace of key/value cmdline args
+
+    :return: namespace of key/value cmdline args.
     :rtype: `namespace`
     """
-    parser = argparse.ArgumentParser(description='musketeer worker')
+    parser = argparse.ArgumentParser(description='Musketeer task creation')
     parser.add_argument('--credentials', required=True)
     parser.add_argument('--task_name', required=True)
     parser.add_argument('--user', required=True)
@@ -65,55 +71,30 @@ def args_parse():
 def create_task(credentials, user, password, task_name, task_definition):
     """
     Create a Federated ML task.
+
     :param credentials: json file containing credentials.
     :type credentials: `str`
-    :param user: user name for authentication as task creator
+    :param user: user name for authentication as task creator.
     :type user: `str`
-    :param password: password for authentication as task creator
+    :param password: password for authentication as task creator.
     :type password: `str`
-    :param task_name: name of the task (must be unique)
+    :param task_name: name of the task (must be unique).
     :type task_name: `str`
-    :param task_definition: definition of the task
+    :param task_definition: definition of the task.
     :type task_definition: `dict`
     """
-    creator_context = fflapi.Context.from_credentials_file(credentials,
-                                                           user,
-                                                           password)
+    context = ffl.Factory.context(platform, credentials, user, password)
+    user = ffl.Factory.user(context, task_name=task_name)
 
-    creator = fflapi.User(creator_context, task_name=task_name)
-    topology = fflapi.Topology.star
-
-    with creator:
-        result = creator.create_task(topology, task_definition)
+    with user:
+        result = user.create_task(topology, task_definition)
 
     return result
 
 
-def get_task_participants(credentials, user, password, task_name):
-    """
-    Retrieve a list with details of all the task participants.
-    If called by a participant different from the task creator, the returned list will be empty.
-    :param credentials: json file containing credentials.
-    :type credentials: `str`
-    :param user: user name for authentication as task creator
-    :type user: `str`
-    :param password: password for authentication as task creator
-    :type password: `str`
-    :param task_name: name of the task (must be unique)
-    :type task_name: `str`
-    :return: list with the details of all the task participants
-    :rtype: `list`
-    """
-    context = fflapi.Context.from_credentials_file(credentials, user, password)
-    user = fflapi.User(context)
-
-    with user:
-        return user.messenger.task_assignments(task_name)
-
-
 def main():
     """
-    Main entry point
+    Main entry point.
     """
     try:
         cmdline = args_parse()
@@ -121,8 +102,8 @@ def main():
         # create new machine learning task
         task_definition = {"aggregator": "neural_network.Aggregator",
                            "participant": "neural_network.Participant",
-                           "quorum": 1,
-                           "round": 5,
+                           "quorum": 2,
+                           "round": 2,
                            "epoch": 2,
                            "batch_size": 256,
                            "learning_rate": 0.001,
@@ -137,10 +118,10 @@ def main():
                              task_definition)
 
         LOGGER.debug(result)
-        LOGGER.info('task created.')
+        LOGGER.info('Task created.')
 
     except Exception as err:
-        LOGGER.error('error: %s', err)
+        LOGGER.error('Error: %s', err)
         raise err
 
 

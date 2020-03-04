@@ -29,11 +29,15 @@ Author: Tran Ngoc Minh (M.N.Tran@ibm.com).
 # to run:
 # python3 aggregator.py --credentials <> --user <> --password <> --task_name <>
 
+import sys
+sys.path.append("..")
+
 import argparse
 import logging
 import traceback
 
-from demo import fflapi
+from demo import ffl
+from demo import platform
 
 
 # Set up logger
@@ -42,14 +46,15 @@ logging.basicConfig(
     format='%(asctime)s.%(msecs)03d %(levelname)-6s %(name)s %(thread)d :: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S')
 
-LOGGER = logging.getLogger('aggregator')
+LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.DEBUG)
 
 
 def args_parse():
     """
     Parse command line args.
-    :return: namespace of key/value cmdline args
+
+    :return: namespace of key/value cmdline args.
     :rtype: `namespace`
     """
     parser = argparse.ArgumentParser(description='Musketeer aggregator')
@@ -65,6 +70,7 @@ def args_parse():
 def get_class(class_name):
     """
     Get a class module from its name.
+
     :param class_name: Full name of a class.
     :type class_name: `str`
     :return: The class `module`.
@@ -80,23 +86,24 @@ def get_class(class_name):
 def run(credentials, user, password, task_name):
     """
     Run the algorithm for the given task as aggregator.
+
     :param credentials: json file containing credentials.
     :type credentials: `str`
-    :param user: user name for authentication as task creator
+    :param user: user name for authentication as task creator.
     :type user: `str`
-    :param password: password for authentication as task creator
+    :param password: password for authentication as task creator.
     :type password: `str`
-    :param task_name: training task to be performed
+    :param task_name: training task to be performed.
     :type task_name: `str`
     """
-    context = fflapi.Context.from_credentials_file(credentials, user, password)
-    user = fflapi.User(context, task_name=task_name)
+    context = ffl.Factory.context(platform, credentials, user, password)
+    user = ffl.Factory.user(context, task_name=task_name)
 
     with user:
         import json
         task_definition = json.loads(user.task_info()['definition'])
 
-    aggregator = fflapi.Aggregator(context, task_name=task_name)
+    aggregator = ffl.Factory.aggregator(context, task_name=task_name)
 
     import sys
     sys.path.append("../fl_algorithm")
@@ -107,6 +114,7 @@ def run(credentials, user, password, task_name):
     model = None
     try:
         model = algorithm.start()
+
     except Exception as e:
         traceback.print_exc()
         LOGGER.error(str(e))
@@ -116,12 +124,12 @@ def run(credentials, user, password, task_name):
     with aggregator:
         aggregator.stop_task(model)
 
-    LOGGER.info('Completed training')
+    LOGGER.info('Completed training !!!')
 
 
 def main():
     """
-    Main entry point
+    Main entry point.
     """
     try:
         cmdline = args_parse()
@@ -132,7 +140,7 @@ def main():
             cmdline.task_name)
 
     except Exception as err:
-        LOGGER.error('error: %s', err)
+        LOGGER.error('Error: %s', err)
         raise err
 
 
