@@ -29,14 +29,10 @@ Author: John D Sheehan (john.d.sheehan@ie.ibm.com)
 # to run:
 # python3 register.py --credentials <> --user <> --password <> --org <>
 
-import sys
-sys.path.append("..")
-
 import argparse
 import logging
-
-from demo import ffl
-from demo import platform
+import platform_utils as utils
+import pycloudmessenger.ffl.abstractions as ffl
 
 
 # Set up logger
@@ -56,17 +52,14 @@ def args_parse():
     :return: namespace of key/value cmdline args.
     :rtype: `namespace`
     """
-    parser = argparse.ArgumentParser(description='Musketeer user registration')
-    parser.add_argument('--credentials', required=True, help='Original credentials file from IBM')
-    parser.add_argument('--user', required=True)
-    parser.add_argument('--password', required=True)
+    parser = utils.create_args(description='Musketeer user registration')
     parser.add_argument('--org', required=True, help='Your organisation')
     cmdline = parser.parse_args()
 
     return cmdline
 
 
-def create_user(credentials, user, password, org):
+def create_user(context, user, password, org):
     """
     Create the user to communicate with FFL.
 
@@ -79,12 +72,10 @@ def create_user(credentials, user, password, org):
     :param org: organization the user belongs to.
     :type org: `str`
     """
-    context = ffl.Factory.context(platform, credentials)
     ffl_user = ffl.Factory.user(context)
 
     with ffl_user:
         ffl_user.create_user(user, password, org)
-        LOGGER.info('user %s created', user)
 
 
 def main():
@@ -93,7 +84,8 @@ def main():
     """
     try:
         cmdline = args_parse()
-        create_user(cmdline.credentials, cmdline.user, cmdline.password, cmdline.org)
+        context = utils.platform(cmdline.platform, cmdline.credentials)
+        create_user(context, cmdline.user, cmdline.password, cmdline.org)
         LOGGER.info('User %s created', cmdline.user)
 
     except Exception as err:

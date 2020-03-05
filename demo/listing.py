@@ -29,15 +29,10 @@ Author: John D Sheehan (john.d.sheehan@ie.ibm.com)
 # to run:
 # python3 listing.py --credentials <>
 
-import sys
-sys.path.append("..")
-
 import argparse
 import logging
-
-from demo import ffl
-from demo import platform
-
+import platform_utils as utils
+import pycloudmessenger.ffl.abstractions as ffl
 
 # Set up logger
 logging.basicConfig(
@@ -56,14 +51,13 @@ def args_parse():
     :return: namespace of key/value cmdline args.
     :rtype: `namespace`
     """
-    parser = argparse.ArgumentParser(description='Musketeer task list')
-    parser.add_argument('--credentials', required=True, help='Original credentials file from IBM')
+    parser = utils.create_args(description='Musketeer task list')
     cmdline = parser.parse_args()
 
     return cmdline
 
 
-def get_tasks(credentials):
+def get_tasks(context):
     """
     Get a list of all the tasks.
 
@@ -72,7 +66,6 @@ def get_tasks(credentials):
     :return: list of all the tasks, each of which is a dictionary.
     :rtype: `list`
     """
-    context = ffl.Factory.context(platform, credentials)
     user = ffl.Factory.user(context)
 
     with user:
@@ -87,7 +80,8 @@ def main():
     """
     try:
         cmdline = args_parse()
-        tasks = get_tasks(cmdline.credentials)
+        context = utils.platform(cmdline.platform, cmdline.credentials, cmdline.user, cmdline.password)
+        tasks = get_tasks(context)
 
         for task in tasks:
             LOGGER.info(f"{task['task_name']} - {task['status']}")

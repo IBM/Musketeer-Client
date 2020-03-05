@@ -35,7 +35,7 @@ from keras.models import model_from_json, Sequential
 from keras.layers import Conv2D, MaxPooling2D, Dense, Dropout, Flatten
 from keras.datasets import mnist
 
-from demo import fflapi
+import pycloudmessenger.ffl.abstractions as fflapi
 
 
 # Set up logger
@@ -135,7 +135,7 @@ class Aggregator(BasicParticipant):
                 with self.comms:
                     result = self.comms.receive(self.timeout)
 
-            except fflapi.TimedOutException as err:
+            except Exception as err:
                 raise err
 
             LOGGER.debug(result)
@@ -156,7 +156,8 @@ class Aggregator(BasicParticipant):
                 result = self.comms.receive(self.timeout)
                 LOGGER.info('Received model update from participant')
 
-            except fflapi.TimedOutException as err:
+            except Exception as err:
+                LOGGER.error(err)
                 raise err
 
             if fflapi.Notification.is_participant_updated(result):
@@ -259,10 +260,8 @@ class Participant(BasicParticipant):
                           optimizer=optimizers.Adam(lr=self.learning_rate),
                           metrics=['accuracy'])
 
-        except fflapi.TimedOutException as timeout:
+        except Exception as timeout:
             LOGGER.exception(timeout)
-        except fflapi.ConsumerException as consumer_ex:
-            LOGGER.exception(consumer_ex)
 
         for iter in range(self.round):
             try:
@@ -281,10 +280,8 @@ class Participant(BasicParticipant):
                 with self.comms:
                     self.comms.send({'updated_weights': updated_weights})
 
-            except fflapi.TimedOutException as timeout:
+            except Exception as timeout:
                 LOGGER.exception(timeout)
-            except fflapi.ConsumerException as consumer_ex:
-                LOGGER.exception(consumer_ex)
 
         LOGGER.info('Finished %d rounds, done.' % self.round)
 
@@ -298,7 +295,5 @@ class Participant(BasicParticipant):
 
                 LOGGER.info('Received the final model from aggregator')
 
-        except fflapi.TimedOutException as timeout:
+        except Exception as timeout:
             LOGGER.exception(timeout)
-        except fflapi.ConsumerException as consumer_ex:
-            LOGGER.exception(consumer_ex)
