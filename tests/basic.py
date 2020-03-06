@@ -31,7 +31,7 @@ import time
 import unittest
 import pytest
 import pycloudmessenger.ffl.abstractions as ffl
-import pycloudmessenger.ffl.fflapi as fflapi
+import demo.platform_utils as utils
 
 
 #Set up logger
@@ -43,7 +43,7 @@ logging.basicConfig(
 LOGGER = logging.getLogger(__package__)
 
 
-@pytest.mark.usefixtures("credentials")
+@pytest.mark.usefixtures("credentials", "platform")
 class MessengerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -55,8 +55,7 @@ class MessengerTests(unittest.TestCase):
 
     #@unittest.skip("temporarily skipping")
     def test_get_tasks(self):
-        ffl.Factory.register('cloud', fflapi.Context, fflapi.User, fflapi.Aggregator, fflapi.Participant)
-        context = ffl.Factory.context('cloud', self.credentials)
+        context = utils.platform(self.platform, self.credentials)
 
         user = ffl.Factory.user(context)
         with user:
