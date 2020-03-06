@@ -4,5 +4,6 @@ python:
     - "3.6"
 script:
 - echo $PYCLOUDMESSENGER > ./creds.json
+- pip3 install --user git+https://github.com/IBM/pycloudmessenger.git@AbstractMessenger
 - python3 -m pytest tests/basic.py --credentials=./creds.json -srx -s
 - rm ./creds.json
