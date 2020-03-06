@@ -30,6 +30,7 @@ import logging
 import time
 import unittest
 import pytest
+import pycloudmessenger.ffl.abstractions as ffl
 import pycloudmessenger.ffl.fflapi as fflapi
 
 
@@ -52,10 +53,12 @@ class MessengerTests(unittest.TestCase):
     def tearDownClass(cls):
         pass
 
-    @unittest.skip("temporarily skipping")
+    #@unittest.skip("temporarily skipping")
     def test_get_tasks(self):
-        context = fflapi.Context.from_credentials_file(self.credentials)
-        user = fflapi.User(context)
+        ffl.Factory.register('cloud', fflapi.Context, fflapi.User, fflapi.Aggregator, fflapi.Participant)
+        context = ffl.Factory.context('cloud', self.credentials)
+
+        user = ffl.Factory.user(context)
         with user:
             result = user.get_tasks()
             for r in result:
