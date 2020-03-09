@@ -1,11 +1,9 @@
 import sys
 sys.path.append("..")
 
-import json
 import argparse
 
 import pycloudmessenger.ffl.abstractions as ffl
-
 
 
 def platform(config: str = 'cloud', credentials: str = None, user: str = None, password: str = None):

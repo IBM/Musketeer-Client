@@ -27,9 +27,8 @@ Author: Tran Ngoc Minh (M.N.Tran@ibm.com).
 """
 
 # to run:
-# python3 participant.py --credentials <> --user <> --password <> --task_name <>
+# python3 participant.py --credentials <> --user <> --password <> --task_name <> --platform <>
 
-import argparse
 import logging
 import traceback
 import platform_utils as utils

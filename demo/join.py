@@ -28,9 +28,8 @@ Modified from worker.py
 """
 
 # to run:
-# python3 join.py --credentials <> --user <> --password <> --task_name <>
+# python3 join.py --credentials <> --user <> --password <> --task_name <> --platform <>
 
-import argparse
 import logging
 import platform_utils as utils
 import pycloudmessenger.ffl.abstractions as ffl

@@ -28,12 +28,12 @@ Modified from creator.py
 """
 
 # to run:
-# python3 creator.py --credentials <> --user <> --password <> --task_name <>
+# python3 creator.py --credentials <> --user <> --password <> --task_name <> --platform <>
 
-import argparse
 import logging
 import platform_utils as utils
 import pycloudmessenger.ffl.abstractions as ffl
+
 
 # Set up logger
 logging.basicConfig(
@@ -93,12 +93,12 @@ def main():
         # create new machine learning task
         task_definition = {"aggregator": "neural_network.Aggregator",
                            "participant": "neural_network.Participant",
-                           "quorum": 1,
-                           "round": 2,
+                           "quorum": 2,
+                           "round": 5,
                            "epoch": 2,
                            "batch_size": 256,
                            "learning_rate": 0.001,
-                           "training_size": 3000,
+                           "training_size": 10000,
                            "test_size": 1000,
                            }
 

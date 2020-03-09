@@ -27,9 +27,8 @@ Author: John D Sheehan (john.d.sheehan@ie.ibm.com)
 """
 
 # to run:
-# python3 register.py --credentials <> --user <> --password <> --org <>
+# python3 register.py --credentials <> --user <> --password <> --org <> --platform <>
 
-import argparse
 import logging
 import platform_utils as utils
 import pycloudmessenger.ffl.abstractions as ffl

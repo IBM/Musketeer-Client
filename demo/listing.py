@@ -27,12 +27,12 @@ Author: John D Sheehan (john.d.sheehan@ie.ibm.com)
 """
 
 # to run:
-# python3 listing.py --credentials <>
+# python3 listing.py --credentials <> --user <> --password <> --platform <>
 
-import argparse
 import logging
 import platform_utils as utils
 import pycloudmessenger.ffl.abstractions as ffl
+
 
 # Set up logger
 logging.basicConfig(

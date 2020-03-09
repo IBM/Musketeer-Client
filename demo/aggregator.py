@@ -27,9 +27,8 @@ Author: Tran Ngoc Minh (M.N.Tran@ibm.com).
 """
 
 # to run:
-# python3 aggregator.py --credentials <> --user <> --password <> --task_name <>
+# python3 aggregator.py --credentials <> --user <> --password <> --task_name <> --platform <>
 
-import argparse
 import logging
 import traceback
 import platform_utils as utils
@@ -117,7 +116,6 @@ def run(context, task_name):
     except Exception as e:
         traceback.print_exc()
         LOGGER.error(str(e))
-
 
 
 def main():
