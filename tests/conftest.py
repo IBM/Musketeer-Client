@@ -30,7 +30,15 @@ import pytest
 
 def pytest_addoption(parser):
     parser.addoption("--credentials", required=True)
+    parser.addoption("--platform", required=True)
 
+
+@pytest.fixture
+def platform(request):
+    value = request.config.getoption('platform')
+    if request.cls:
+        request.cls.platform = value
+    return value
 
 @pytest.fixture
 def credentials(request):

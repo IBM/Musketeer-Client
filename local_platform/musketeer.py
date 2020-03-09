@@ -3,7 +3,7 @@ import json
 
 from flask import Flask, make_response, request, jsonify
 
-from comm.localapi import Notification
+from pycloudmessenger.ffl.abstractions import Notification
 
 
 HOST = '127.0.0.1'

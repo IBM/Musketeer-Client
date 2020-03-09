@@ -29,15 +29,12 @@ Author: Tran Ngoc Minh (M.N.Tran@ibm.com).
 # to run:
 # python3 participant.py --credentials <> --user <> --password <> --task_name <>
 
-import sys
-sys.path.append("..")
-
 import argparse
 import logging
 import traceback
+import platform_utils as utils
+import pycloudmessenger.ffl.abstractions as ffl
 
-from demo import ffl
-from demo import platform
 from demo.aggregator import get_class
 
 
@@ -58,17 +55,14 @@ def args_parse():
     :return: namespace of key/value cmdline args.
     :rtype: `namespace`
     """
-    parser = argparse.ArgumentParser(description='Musketeer participant')
-    parser.add_argument('--credentials', required=True)
+    parser = utils.create_args(description='Musketeer participant')
     parser.add_argument('--task_name', required=True)
-    parser.add_argument('--user', required=True)
-    parser.add_argument('--password', required=True)
     cmdline = parser.parse_args()
 
     return cmdline
 
 
-def run(credentials, user, password, task_name):
+def run(context, task_name):
     """
     Run the algorithm for the given task as participant.
 
@@ -81,7 +75,6 @@ def run(credentials, user, password, task_name):
     :param task_name: training task to be performed.
     :type task_name: `str`
     """
-    context = ffl.Factory.context(platform, credentials, user, password)
     user = ffl.Factory.user(context, task_name=task_name)
 
     with user:
@@ -112,11 +105,9 @@ def main():
     """
     try:
         cmdline = args_parse()
+        context = utils.platform(cmdline.platform, cmdline.credentials, cmdline.user, cmdline.password)
 
-        run(cmdline.credentials,
-            cmdline.user,
-            cmdline.password,
-            cmdline.task_name)
+        run(context, cmdline.task_name)
 
     except Exception as err:
         LOGGER.error('Error: %s', err)

@@ -30,16 +30,10 @@ Modified from creator.py
 # to run:
 # python3 creator.py --credentials <> --user <> --password <> --task_name <>
 
-import sys
-sys.path.append("..")
-
 import argparse
 import logging
-
-from demo import ffl
-from demo import platform
-from demo import topology
-
+import platform_utils as utils
+import pycloudmessenger.ffl.abstractions as ffl
 
 # Set up logger
 logging.basicConfig(
@@ -58,17 +52,14 @@ def args_parse():
     :return: namespace of key/value cmdline args.
     :rtype: `namespace`
     """
-    parser = argparse.ArgumentParser(description='Musketeer task creation')
-    parser.add_argument('--credentials', required=True)
+    parser = utils.create_args(description='Musketeer task creation')
     parser.add_argument('--task_name', required=True)
-    parser.add_argument('--user', required=True)
-    parser.add_argument('--password', required=True)
     cmdline = parser.parse_args()
 
     return cmdline
 
 
-def create_task(credentials, user, password, task_name, task_definition):
+def create_task(context, task_name, task_definition):
     """
     Create a Federated ML task.
 
@@ -83,11 +74,10 @@ def create_task(credentials, user, password, task_name, task_definition):
     :param task_definition: definition of the task.
     :type task_definition: `dict`
     """
-    context = ffl.Factory.context(platform, credentials, user, password)
     user = ffl.Factory.user(context, task_name=task_name)
 
     with user:
-        result = user.create_task(topology, task_definition)
+        result = user.create_task(ffl.Topology.star, task_definition)
 
     return result
 
@@ -98,11 +88,12 @@ def main():
     """
     try:
         cmdline = args_parse()
+        context = utils.platform(cmdline.platform, cmdline.credentials, cmdline.user, cmdline.password)
 
         # create new machine learning task
         task_definition = {"aggregator": "neural_network.Aggregator",
                            "participant": "neural_network.Participant",
-                           "quorum": 2,
+                           "quorum": 1,
                            "round": 2,
                            "epoch": 2,
                            "batch_size": 256,
@@ -111,9 +102,7 @@ def main():
                            "test_size": 1000,
                            }
 
-        result = create_task(cmdline.credentials,
-                             cmdline.user,
-                             cmdline.password,
+        result = create_task(context,
                              cmdline.task_name,
                              task_definition)
 

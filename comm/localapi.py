@@ -68,86 +68,6 @@ class Context(dict):
         self.update({'user': user})
 
 
-class Topology(str):
-    """
-    Class representing FFL task topologies.
-    """
-
-    star = "STAR"
-
-    def __str__(self):
-        return self.value
-
-
-class Notification(str, Enum):
-    """
-    Notifications that can be received.
-    """
-
-    participant_joined = 'participant_joined'
-    participant_updated = 'participant_updated'
-    aggregator_stopped = 'aggregator_stopped'
-
-    @classmethod
-    def is_notification(cls, msg, notification):
-        """
-        Check if msg is a particular notification.
-
-        :param msg: message to be checked.
-        :type msg: `dict`
-        :param notification: notification to be compared against.
-        :type notification: `str`
-        :return: True if yes, False otherwise.
-        :rtype: `bool`
-        """
-        try:
-            ntype = msg['notification']['type']
-            return cls(ntype) is notification
-        except:
-            # not a notification
-            pass
-
-        return False
-
-    @classmethod
-    def is_aggregator_stopped(cls, msg):
-        """
-        Check if msg is an 'aggregator_stopped' notification.
-
-        :param msg: message to be checked.
-        :type msg: `dict`
-        :return: True if yes, False otherwise.
-        :rtype: `bool`
-        """
-        return cls.is_notification(msg, cls.aggregator_stopped)
-
-    @classmethod
-    def is_participant_joined(cls, msg):
-        """
-        Check if msg is a 'participant_joined' notification.
-
-        :param msg: message to be checked.
-        :type msg: `dict`
-        :return: True if yes, False otherwise.
-        :rtype: `bool`
-        """
-        return cls.is_notification(msg, cls.participant_joined)
-
-    @classmethod
-    def is_participant_updated(cls, msg):
-        """
-        Check if msg is a 'participant_updated' notification.
-
-        :param msg: message to be checked.
-        :type msg: `dict`
-        :return: True if yes, False otherwise.
-        :rtype: `bool`
-        """
-        return cls.is_notification(msg, cls.participant_updated)
-
-    def __str__(self):
-        return self.value
-
 
 participant_list = []
 
@@ -375,7 +295,7 @@ class Aggregator(fflabc.AbstractAggregator, BasicParticipant):
             if r.status_code == requests.codes.ok:
                 result = r.json()['message']
 
-                if isinstance(result, list) and result[0] == Notification.participant_joined:
+                if isinstance(result, list) and result[0] == fflabc.Notification.participant_joined:
                     participant_list.append(result[1])
 
                 return result

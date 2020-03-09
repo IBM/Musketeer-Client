@@ -30,14 +30,10 @@ Modified from worker.py
 # to run:
 # python3 join.py --credentials <> --user <> --password <> --task_name <>
 
-import sys
-sys.path.append("..")
-
 import argparse
 import logging
-
-from demo import ffl
-from demo import platform
+import platform_utils as utils
+import pycloudmessenger.ffl.abstractions as ffl
 
 
 # Set up logger
@@ -57,17 +53,14 @@ def args_parse():
     :return: namespace of key/value cmdline args.
     :rtype: `namespace`
     """
-    parser = argparse.ArgumentParser(description='Musketeer task join')
-    parser.add_argument('--credentials', required=True)
+    parser = utils.create_args(description='Musketeer task join')
     parser.add_argument('--task_name', required=True)
-    parser.add_argument('--user', required=True)
-    parser.add_argument('--password', required=True)
     cmdline = parser.parse_args()
 
     return cmdline
 
 
-def join_task(credentials, user, password, task_name):
+def join_task(context, task_name):
     """
     Join a Federated ML task.
 
@@ -80,14 +73,13 @@ def join_task(credentials, user, password, task_name):
     :param task_name: name of the task (must be unique).
     :type task_name: `str`
     """
-    context = ffl.Factory.context(platform, credentials, user, password)
     user = ffl.Factory.user(context, task_name=task_name)
 
     with user:
         user.join_task()
 
 
-def get_user_assignments(credentials, user, password):
+def get_user_assignments(context):
     """
     Retrieve a list of all the tasks the user is participating in.
 
@@ -100,7 +92,6 @@ def get_user_assignments(credentials, user, password):
     :return: list of all the tasks the user is participating in.
     :rtype: `list`
     """
-    context = ffl.Factory.context(platform, credentials, user, password)
     user = ffl.Factory.user(context)
 
     with user:
@@ -113,8 +104,9 @@ def main():
     """
     try:
         cmdline = args_parse()
+        context = utils.platform(cmdline.platform, cmdline.credentials, cmdline.user, cmdline.password)
 
-        join_task(cmdline.credentials, cmdline.user, cmdline.password, cmdline.task_name)
+        join_task(context, cmdline.task_name)
         LOGGER.debug('Joined task')
 
     except Exception as err:
