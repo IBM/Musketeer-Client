@@ -352,9 +352,8 @@ class Aggregator(fflabc.AbstractAggregator, BasicParticipant):
         :param message: message to be sent (needs to be serializable into json string).
         :type message: `dict`
         """
-        message = json.dumps(message, cls=NumpyEncoder)
-        payload = {'message': message}
-        requests.post(self.path + 'aggregator_send', params=payload)
+        payload = {'message': json.dumps(message, cls=NumpyEncoder, indent=2)}
+        requests.post(self.path + 'aggregator_send', json=payload)
 
     def receive(self, timeout=0):
         """
@@ -374,7 +373,7 @@ class Aggregator(fflabc.AbstractAggregator, BasicParticipant):
             r = requests.get(self.path + 'aggregator_receive', params={})
 
             if r.status_code == requests.codes.ok:
-                result = json.loads(r.text)['message']
+                result = r.json()['message']
 
                 if isinstance(result, list) and result[0] == Notification.participant_joined:
                     participant_list.append(result[1])
@@ -420,9 +419,8 @@ class Participant(fflabc.AbstractParticipant, BasicParticipant):
         :param message: message to be sent (needs to be serializable into json string).
         :type message: `dict`
         """
-        message = json.dumps(message, cls=NumpyEncoder)
-        payload = {'message': message}
-        requests.post(self.path + 'participant_send', params=payload)
+        payload = {'message': json.dumps(message, cls=NumpyEncoder, indent=2)}
+        requests.post(self.path + 'participant_send', json=payload)
 
     def receive(self, timeout=0):
         """
@@ -435,13 +433,12 @@ class Participant(fflabc.AbstractParticipant, BasicParticipant):
         :rtype: `dict`
         """
         start = time.time()
-
         while time.time() - start < timeout:
             r = requests.get(self.path + 'participant_receive', params={'user': self.user})
 
             if r.status_code == requests.codes.ok:
-                result = json.loads(r.text)['message']
-                return result
+                result = json.loads(r.json()['message'])
+                return {'params': result}
 
         raise TimedOutException('Timeout when receiving data (%f over %f seconds)' % ((time.time() - start), timeout))
 

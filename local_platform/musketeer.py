@@ -86,7 +86,8 @@ def get_participants():
 
 @app.route('/aggregator_send', methods=['POST'])
 def aggregator_send():
-    message = json.loads(request.args['message'])
+    message = request.json['message']
+
     for user in participant_queue.keys():
         participant_queue[user].append(message)
 
@@ -106,7 +107,7 @@ def aggregator_receive():
 
             elif content[1] is Notification.participant_updated:
                 msg = {'notification': {'type': Notification.participant_updated}}
-                result = {'params': content[0]}
+                result = {'params': json.loads(content[0])}
                 result.update(msg)
 
             del aggregator_queue[0]
@@ -117,7 +118,7 @@ def aggregator_receive():
 
 @app.route('/participant_send', methods=['POST'])
 def participant_send():
-    message = json.loads(request.args['message'])
+    message = request.json['message']
     aggregator_queue.append((message, Notification.participant_updated))
 
     return make_response('', 200)
@@ -129,7 +130,7 @@ def participant_receive():
 
     while True:
         if len(participant_queue[user]) > 0:
-            result = {'params': participant_queue[user][0]}
+            result = participant_queue[user][0]
             del participant_queue[user][0]
             break
 
