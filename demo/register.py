@@ -27,66 +27,68 @@ Author: John D Sheehan (john.d.sheehan@ie.ibm.com)
 """
 
 # to run:
-# python3 register.py --credentials <> --user <> --password <> --org <>
+# python3 register.py --credentials <> --user <> --password <> --org <> --platform <>
 
-import argparse
 import logging
-
-import pycloudmessenger.ffl.fflapi as fflapi
+import platform_utils as utils
+import pycloudmessenger.ffl.abstractions as ffl
 
 
 # Set up logger
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.ERROR,
     format='%(asctime)s.%(msecs)03d %(levelname)-6s %(name)s %(thread)d :: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S')
 
-LOGGER = logging.getLogger('creator')
+LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.DEBUG)
 
 
 def args_parse():
     """
     Parse command line args.
-    :return: namespace of key/value cmdline args
+
+    :return: namespace of key/value cmdline args.
     :rtype: `namespace`
     """
-    parser = argparse.ArgumentParser(description='Musketeer user registration')
-    parser.add_argument('--credentials', required=True, help='Original credentials file from IBM')
-    parser.add_argument('--user', required=True)
-    parser.add_argument('--password', required=True)
+    parser = utils.create_args(description='Musketeer user registration')
     parser.add_argument('--org', required=True, help='Your organisation')
     cmdline = parser.parse_args()
+
     return cmdline
 
 
-def create_user(credentials, user, password, org):
+def create_user(context, user, password, org):
     """
     Create the user to communicate with FFL.
+
     :param credentials: json file containing credentials.
     :type credentials: `str`
-    :param user: user name (must be unique)
+    :param user: user name (must be unique).
     :type user: `str`
-    :param password: password
+    :param password: password.
     :type password: `str`
-    :param org: organization the user belongs to
+    :param org: organization the user belongs to.
     :type org: `str`
     """
-    context = fflapi.Context.from_credentials_file(credentials)
-    with fflapi.User(context) as ffl:
-        ffl.create_user(user, password, org)
+    ffl_user = ffl.Factory.user(context)
+
+    with ffl_user:
+        ffl_user.create_user(user, password, org)
 
 
 def main():
     """
-    Main entry point
+    Main entry point.
     """
     try:
         cmdline = args_parse()
-        create_user(cmdline.credentials, cmdline.user, cmdline.password, cmdline.org)
-        LOGGER.info('user %s created', cmdline.user)
+        context = utils.platform(cmdline.platform, cmdline.credentials)
+        create_user(context, cmdline.user, cmdline.password, cmdline.org)
+        LOGGER.info('User %s created', cmdline.user)
+
     except Exception as err:
-        LOGGER.error('error: %s', err)
+        LOGGER.error('Error: %s', err)
 
 
 if __name__ == '__main__':

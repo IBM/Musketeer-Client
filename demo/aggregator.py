@@ -27,13 +27,12 @@ Author: Tran Ngoc Minh (M.N.Tran@ibm.com).
 """
 
 # to run:
-# python3 aggregator.py --credentials <> --user <> --password <> --task_name <>
+# python3 aggregator.py --credentials <> --user <> --password <> --task_name <> --platform <>
 
-import argparse
 import logging
 import traceback
-
-import pycloudmessenger.ffl.fflapi as fflapi
+import platform_utils as utils
+import pycloudmessenger.ffl.abstractions as ffl
 
 
 # Set up logger
@@ -42,21 +41,19 @@ logging.basicConfig(
     format='%(asctime)s.%(msecs)03d %(levelname)-6s %(name)s %(thread)d :: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S')
 
-LOGGER = logging.getLogger('aggregator')
+LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.DEBUG)
 
 
 def args_parse():
     """
     Parse command line args.
-    :return: namespace of key/value cmdline args
+
+    :return: namespace of key/value cmdline args.
     :rtype: `namespace`
     """
-    parser = argparse.ArgumentParser(description='Musketeer aggregator')
-    parser.add_argument('--credentials', required=True)
+    parser = utils.create_args(description='Musketeer aggregator')
     parser.add_argument('--task_name', required=True)
-    parser.add_argument('--user', required=True)
-    parser.add_argument('--password', required=True)
     cmdline = parser.parse_args()
 
     return cmdline
@@ -65,6 +62,7 @@ def args_parse():
 def get_class(class_name):
     """
     Get a class module from its name.
+
     :param class_name: Full name of a class.
     :type class_name: `str`
     :return: The class `module`.
@@ -77,62 +75,61 @@ def get_class(class_name):
     return class_module
 
 
-def run(credentials, user, password, task_name):
+def run(context, task_name):
     """
     Run the algorithm for the given task as aggregator.
+
     :param credentials: json file containing credentials.
     :type credentials: `str`
-    :param user: user name for authentication as task creator
+    :param user: user name for authentication as task creator.
     :type user: `str`
-    :param password: password for authentication as task creator
+    :param password: password for authentication as task creator.
     :type password: `str`
-    :param task_name: training task to be performed
+    :param task_name: training task to be performed.
     :type task_name: `str`
     """
-    context = fflapi.Context.from_credentials_file(credentials, user, password)
-    user = fflapi.User(context, task_name=task_name)
+    user = ffl.Factory.user(context, task_name=task_name)
 
     with user:
         import json
         task_definition = json.loads(user.task_info()['definition'])
 
-    aggregator = fflapi.Aggregator(context, task_name=task_name, download_models=False)
+    aggregator = ffl.Factory.aggregator(context, task_name=task_name)
 
     import sys
     sys.path.append("../fl_algorithm")
 
     alg_class = get_class(task_definition['aggregator'])
     algorithm = alg_class(task_definition, aggregator)
-    model = None
 
+    model = None
     try:
         model = algorithm.start()
+
+        LOGGER.info('Dispatch final model to participants...')
+
+        with aggregator:
+            aggregator.stop_task(model)
+
+        LOGGER.info('Completed training !!!')
+
     except Exception as e:
         traceback.print_exc()
         LOGGER.error(str(e))
 
-    LOGGER.info('Dispatch final model to participants...')
-
-    with aggregator:
-        aggregator.stop_task(model)
-
-    LOGGER.info('Completed training')
-
 
 def main():
     """
-    Main entry point
+    Main entry point.
     """
     try:
         cmdline = args_parse()
+        context = utils.platform(cmdline.platform, cmdline.credentials, cmdline.user, cmdline.password)
 
-        run(cmdline.credentials,
-            cmdline.user,
-            cmdline.password,
-            cmdline.task_name)
+        run(context, cmdline.task_name)
 
     except Exception as err:
-        LOGGER.error('error: %s', err)
+        LOGGER.error('Error: %s', err)
         raise err
 
 

@@ -96,13 +96,13 @@ The demo is located in the ``demo`` directory, and can be run by:
 
 .. code-block::
 
-	python3 register.py --credentials <credentials.json> --user <AGGREGATOR USER> --password <> --org <>
-	python3 register.py --credentials <credentials.json> --user <WORKER USER> --password <> --org <>
-	python3 creator.py --credentials <credentials.json> --user <AGGREGATOR USER> --password <> --task_name <>
-	python3 aggregator.py --credentials <credentials.json> --user <AGGREGATOR USER> --password <> --task_name <>
-	python3 listing.py --credentials <credentials.json>
-	python3 join.py --credentials <credentials.json> --user <WORKER USER> --password <> --task_name <>
-	python3 participant.py --credentials <credentials.json> --user <WORKER USER> --password <> --task_name <>
+	python3 register.py --credentials <credentials.json> --user <AGGREGATOR USER> --password <> --org <> --platform <cloud or local>
+	python3 register.py --credentials <credentials.json> --user <WORKER USER> --password <> --org <> --platform <cloud or local>
+	python3 creator.py --credentials <credentials.json> --user <AGGREGATOR USER> --password <> --task_name <> --platform <cloud or local>
+	python3 aggregator.py --credentials <credentials.json> --user <AGGREGATOR USER> --password <> --task_name <> --platform <cloud or local>
+	python3 listing.py --credentials <credentials.json> --user <> --password <> --platform <cloud or local>
+	python3 join.py --credentials <credentials.json> --user <WORKER USER> --password <> --task_name <> --platform <cloud or local>
+	python3 participant.py --credentials <credentials.json> --user <WORKER USER> --password <> --task_name <> --platform <cloud or local>
 
 
 Notebook Demo
@@ -122,6 +122,14 @@ Run the ``task_creator.ipnyb`` notebook for the workflow of a task creator / agg
 
 Run the ``task_participant.ipnyb`` notebook for the workflow of a task participant.
 
+
+Local Mode
+---------------------------------
+To facilitate research, we support a local version of the Musketeer platform, which is developed on flask. This local version has an assumption that there is only one task running at a time. In order to run tasks locally, run the following command:
+
+.. code-block::
+
+    python3 local_platform/musketeer.py
 
 This project has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 824988. https://musketeer.eu/
 
