@@ -6,8 +6,6 @@ the European Union under the Horizon 2020 Program.
 The project started on 01/12/2018 and will be / was completed on 30/11/2021. Thus, in accordance
 with article 30.3 of the Multi-Beneficiary General Model Grant Agreement of the Program, the above
 limitations are in force until 30/11/2025.
-
-Author: Tran Ngoc Minh (M.N.Tran@ibm.com).
 '''
 """
  Licensed to the Apache Software Foundation (ASF) under one or more
@@ -31,8 +29,11 @@ Author: Tran Ngoc Minh (M.N.Tran@ibm.com).
 
 import logging
 import traceback
-import platform_utils as utils
+
 import pycloudmessenger.ffl.abstractions as ffl
+from pycloudmessenger.serializer import JsonPickleSerializer as serializer
+
+import platform_utils as utils
 
 
 # Set up logger
@@ -79,20 +80,15 @@ def run(context, task_name):
     """
     Run the algorithm for the given task as aggregator.
 
-    :param credentials: json file containing credentials.
-    :type credentials: `str`
-    :param user: user name for authentication as task creator.
-    :type user: `str`
-    :param password: password for authentication as task creator.
-    :type password: `str`
+    :param context: context info.
+    :type context: `pycloudmessenger.ffl.abstractions.AbstractContext`
     :param task_name: training task to be performed.
     :type task_name: `str`
     """
     user = ffl.Factory.user(context, task_name=task_name)
 
     with user:
-        import json
-        task_definition = json.loads(user.task_info()['definition'])
+        task_definition = serializer.deserialize(user.task_info()['definition'])
 
     aggregator = ffl.Factory.aggregator(context, task_name=task_name)
 
@@ -102,7 +98,6 @@ def run(context, task_name):
     alg_class = get_class(task_definition['aggregator'])
     algorithm = alg_class(task_definition, aggregator)
 
-    model = None
     try:
         model = algorithm.start()
 
