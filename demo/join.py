@@ -6,9 +6,6 @@ the European Union under the Horizon 2020 Program.
 The project started on 01/12/2018 and will be / was completed on 30/11/2021. Thus, in accordance
 with article 30.3 of the Multi-Beneficiary General Model Grant Agreement of the Program, the above
 limitations are in force until 30/11/2025.
-
-Author: Tran Ngoc Minh (M.N.Tran@ibm.com).
-Modified from worker.py
 '''
 """
  Licensed to the Apache Software Foundation (ASF) under one or more
@@ -31,8 +28,10 @@ Modified from worker.py
 # python3 join.py --credentials <> --user <> --password <> --task_name <> --platform <>
 
 import logging
-import platform_utils as utils
+
 import pycloudmessenger.ffl.abstractions as ffl
+
+import platform_utils as utils
 
 
 # Set up logger
@@ -63,12 +62,8 @@ def join_task(context, task_name):
     """
     Join a Federated ML task.
 
-    :param credentials: json file containing credentials.
-    :type credentials: `str`
-    :param user: user name for authentication as task creator.
-    :type user: `str`
-    :param password: password for authentication as task creator.
-    :type password: `str`
+    :param context: context info.
+    :type context: `pycloudmessenger.ffl.abstractions.AbstractContext`
     :param task_name: name of the task (must be unique).
     :type task_name: `str`
     """
@@ -82,12 +77,8 @@ def get_user_assignments(context):
     """
     Retrieve a list of all the tasks the user is participating in.
 
-    :param credentials: json file containing credentials.
-    :type credentials: `str`
-    :param user: user name for authentication as task creator.
-    :type user: `str`
-    :param password: password for authentication as task creator.
-    :type password: `str`
+    :param context: context info.
+    :type context: `pycloudmessenger.ffl.abstractions.AbstractContext`
     :return: list of all the tasks the user is participating in.
     :rtype: `list`
     """

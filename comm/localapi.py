@@ -25,19 +25,10 @@ limitations are in force until 30/11/2025.
 """
 import time
 import requests
-from enum import Enum
-
 import json
-import numpy as np
 
 import pycloudmessenger.ffl.abstractions as fflabc
-
-
-class NumpyEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return json.JSONEncoder.default(self, obj)
+from pycloudmessenger.serializer import JsonPickleSerializer as serializer
 
 
 class TimedOutException(Exception):
@@ -66,7 +57,6 @@ class Context(dict):
             user = kwargs.get('user')
 
         self.update({'user': user})
-
 
 
 participant_list = []
@@ -151,7 +141,7 @@ class User(fflabc.AbstractUser, BasicParticipant):
         requests.post(self.path + 'reset')
 
         # Then create a new task
-        message = json.dumps(definition, cls=NumpyEncoder)
+        message = serializer.serialize(definition)
         payload = {'message': message, 'task_name': self.task_name}
         r = requests.post(self.path + 'create_task', params=payload)
 
@@ -272,7 +262,8 @@ class Aggregator(fflabc.AbstractAggregator, BasicParticipant):
         :param message: message to be sent (needs to be serializable into json string).
         :type message: `dict`
         """
-        payload = {'message': json.dumps(message, cls=NumpyEncoder, indent=2)}
+        message = serializer.serialize(message)
+        payload = {'message': message}
         requests.post(self.path + 'aggregator_send', json=payload)
 
     def receive(self, timeout=0):
@@ -297,6 +288,8 @@ class Aggregator(fflabc.AbstractAggregator, BasicParticipant):
 
                 if isinstance(result, list) and result[0] == fflabc.Notification.participant_joined:
                     participant_list.append(result[1])
+                else:
+                    result['params'] = serializer.deserialize(result['params'])
 
                 return result
 
@@ -339,7 +332,8 @@ class Participant(fflabc.AbstractParticipant, BasicParticipant):
         :param message: message to be sent (needs to be serializable into json string).
         :type message: `dict`
         """
-        payload = {'message': json.dumps(message, cls=NumpyEncoder, indent=2)}
+        message = serializer.serialize(message)
+        payload = {'message': message}
         requests.post(self.path + 'participant_send', json=payload)
 
     def receive(self, timeout=0):
@@ -357,7 +351,7 @@ class Participant(fflabc.AbstractParticipant, BasicParticipant):
             r = requests.get(self.path + 'participant_receive', params={'user': self.user})
 
             if r.status_code == requests.codes.ok:
-                result = json.loads(r.json()['message'])
+                result = serializer.deserialize(r.json()['message'])
                 return {'params': result}
 
         raise TimedOutException('Timeout when receiving data (%f over %f seconds)' % ((time.time() - start), timeout))

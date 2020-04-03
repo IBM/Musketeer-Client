@@ -6,8 +6,6 @@ the European Union under the Horizon 2020 Program.
 The project started on 01/12/2018 and will be / was completed on 30/11/2021. Thus, in accordance
 with article 30.3 of the Multi-Beneficiary General Model Grant Agreement of the Program, the above
 limitations are in force until 30/11/2025.
-
-Author: John D Sheehan (john.d.sheehan@ie.ibm.com)
 '''
 """
  Licensed to the Apache Software Foundation (ASF) under one or more
@@ -30,8 +28,10 @@ Author: John D Sheehan (john.d.sheehan@ie.ibm.com)
 # python3 listing.py --credentials <> --user <> --password <> --platform <>
 
 import logging
-import platform_utils as utils
+
 import pycloudmessenger.ffl.abstractions as ffl
+
+import platform_utils as utils
 
 
 # Set up logger
@@ -61,8 +61,8 @@ def get_tasks(context):
     """
     Get a list of all the tasks.
 
-    :param credentials: json file containing credentials.
-    :type credentials: `str`
+    :param context: context info.
+    :type context: `pycloudmessenger.ffl.abstractions.AbstractContext`
     :return: list of all the tasks, each of which is a dictionary.
     :rtype: `list`
     """

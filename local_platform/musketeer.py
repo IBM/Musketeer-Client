@@ -1,5 +1,4 @@
 import logging
-import json
 
 from flask import Flask, make_response, request, jsonify
 
@@ -107,7 +106,7 @@ def aggregator_receive():
 
             elif content[1] is Notification.participant_updated:
                 msg = {'notification': {'type': Notification.participant_updated}}
-                result = {'params': json.loads(content[0])}
+                result = {'params': content[0]}
                 result.update(msg)
 
             del aggregator_queue[0]
