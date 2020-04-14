@@ -67,21 +67,19 @@ class BasicParticipant:
     Base class for an FFL general user.
     """
 
-    def __init__(self, context, task_name=None):
+    def __init__(self, context):
         """
         Class initializer.
 
         :param context: connection details.
         :type context: :class:`.Context`
-        :param task_name: name of the task.
-        :type task_name: `str`
         """
         self.context = context
         self.url = context['url']
         self.port = context['port']
         self.path = self.url + ':' + str(self.port) + '/'
         self.user = context['user']
-        self.task_name = task_name
+        self.serializer = serializer()
 
     def __enter__(self):
         """
@@ -122,12 +120,14 @@ class User(fflabc.AbstractUser, BasicParticipant):
         """
         pass
 
-    def create_task(self, topology, definition):
+    def create_task(self, task_name: str, topology, definition):
         """
         Creates a task with the given definition and returns a dictionary
         with the details of the created tasks.
         Throws: An exception on failure.
 
+        :param task_name: Name of the task
+        :type task_name: `str`
         :param topology: topology of the task participants' communication network.
         :type topology: `str`
         :param definition: definition of the task to be created.
@@ -141,17 +141,19 @@ class User(fflabc.AbstractUser, BasicParticipant):
         requests.post(self.path + 'reset')
 
         # Then create a new task
-        message = serializer.serialize(definition)
-        payload = {'message': message, 'task_name': self.task_name}
+        message = self.serializer.serialize(definition)
+        payload = {'message': message, 'task_name': task_name}
         r = requests.post(self.path + 'create_task', params=payload)
 
-        return {self.task_name: r}
+        return {task_name: r}
 
-    def task_info(self):
+    def task_info(self, task_name: str):
         """
         Returns the details of a given task.
         Throws: An exception on failure.
 
+        :param task_name: Name of the task
+        :type task_name: `str`
         :return: details of the task.
         :rtype: `dict`
         """
@@ -164,18 +166,20 @@ class User(fflabc.AbstractUser, BasicParticipant):
 
         return definition
 
-    def join_task(self):
+    def join_task(self, task_name: str):
         """
         As a potential task participant, try to join an existing task that has yet to start.
         Throws: An exception on failure.
 
+        :param task_name: Name of the task
+        :type task_name: `str`
         :return: details of the task assignment.
         :rtype: `dict`
         """
         payload = {'message': self.user}
         r = requests.post(self.path + 'join_task', params=payload)
 
-        return {self.task_name: r}
+        return {task_name: r}
 
     def get_tasks(self):
         """
@@ -231,7 +235,8 @@ class Aggregator(fflabc.AbstractAggregator, BasicParticipant):
                                 be returned by receive function.
         :type download_models: `bool`
         """
-        super().__init__(context, task_name)
+        super().__init__(context)
+        self.task_name = task_name
 
     def get_participants(self):
         """
@@ -262,7 +267,7 @@ class Aggregator(fflabc.AbstractAggregator, BasicParticipant):
         :param message: message to be sent (needs to be serializable into json string).
         :type message: `dict`
         """
-        message = serializer.serialize(message)
+        message = self.serializer.serialize(message)
         payload = {'message': message}
         requests.post(self.path + 'aggregator_send', json=payload)
 
@@ -288,10 +293,10 @@ class Aggregator(fflabc.AbstractAggregator, BasicParticipant):
 
                 if isinstance(result, list) and result[0] == fflabc.Notification.participant_joined:
                     participant_list.append(result[1])
+                    return fflabc.Response(result, None)
                 else:
-                    result['params'] = serializer.deserialize(result['params'])
-
-                return result
+                    result['params'] = self.serializer.deserialize(result['params'])
+                    return fflabc.Response(result['notification'], result['params'])
 
         raise TimedOutException('Timeout when receiving data (%f over %f seconds)' % ((time.time() - start), timeout))
 
@@ -322,7 +327,8 @@ class Participant(fflabc.AbstractParticipant, BasicParticipant):
                                 be returned by receive function.
         :type download_models: `bool`
         """
-        super().__init__(context, task_name)
+        super().__init__(context)
+        self.task_name = task_name
 
     def send(self, message=None):
         """
@@ -332,7 +338,7 @@ class Participant(fflabc.AbstractParticipant, BasicParticipant):
         :param message: message to be sent (needs to be serializable into json string).
         :type message: `dict`
         """
-        message = serializer.serialize(message)
+        message = self.serializer.serialize(message)
         payload = {'message': message}
         requests.post(self.path + 'participant_send', json=payload)
 
@@ -351,8 +357,8 @@ class Participant(fflabc.AbstractParticipant, BasicParticipant):
             r = requests.get(self.path + 'participant_receive', params={'user': self.user})
 
             if r.status_code == requests.codes.ok:
-                result = serializer.deserialize(r.json()['message'])
-                return {'params': result}
+                result = self.serializer.deserialize(r.json()['message'])
+                return fflabc.Response(None, result)
 
         raise TimedOutException('Timeout when receiving data (%f over %f seconds)' % ((time.time() - start), timeout))
 

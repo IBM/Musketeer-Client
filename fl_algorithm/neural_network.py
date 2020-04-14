@@ -138,7 +138,7 @@ class Aggregator(BasicParticipant):
             except Exception as err:
                 raise err
 
-            LOGGER.debug(result)
+            LOGGER.debug(response)
 
             if len(results) == self.quorum:
                 ready = True
@@ -161,7 +161,7 @@ class Aggregator(BasicParticipant):
                 raise err
 
             if fflapi.Notification.is_participant_updated(response.notification):
-                results.append(result.content)
+                results.append(response.content)
 
             if len(results) == self.quorum:
                 complete = True
@@ -255,7 +255,7 @@ class Participant(BasicParticipant):
                 msg = self.comms.receive(self.timeout)
                 LOGGER.info("Received model architecture from the aggregator")
 
-            model = msg.content['model'] #model_from_json(msg['params']['model'])
+            model = model_from_json(msg.content['model'])
             model.compile(loss=losses.categorical_crossentropy,
                           optimizer=optimizers.Adam(lr=self.learning_rate),
                           metrics=['accuracy'])
@@ -271,7 +271,7 @@ class Participant(BasicParticipant):
                 LOGGER.info("Round " + str(iter))
                 LOGGER.info('Received model update from the aggregator, start to update local model and train locally')
 
-                weights = msg.content['weights'] #msg['params']['weights']
+                weights = msg.content['weights']
                 model.set_weights(weights)
                 model.fit(self.feature, self.label, batch_size=self.batch_size, epochs=self.epoch)
                 updated_weights = model.get_weights()
@@ -290,7 +290,7 @@ class Participant(BasicParticipant):
                 response = self.comms.receive(self.timeout)
 
             if fflapi.Notification.is_aggregator_stopped(response.notification):
-                weights = response.content['weights'] #result['params']['weights']
+                weights = response.content['weights']
                 model.set_weights(weights)
 
                 LOGGER.info('Received the final model from aggregator')

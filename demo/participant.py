@@ -27,13 +27,15 @@ limitations are in force until 30/11/2025.
 # to run:
 # python3 participant.py --credentials <> --user <> --password <> --task_name <> --platform <>
 
+import json
 import logging
 import traceback
 
 import pycloudmessenger.ffl.abstractions as ffl
 from pycloudmessenger.serializer import JsonPickleSerializer as serializer
 
-from demo.aggregator import get_class
+#from demo.aggregator import get_class
+from aggregator import get_class
 import platform_utils as utils
 
 
@@ -70,10 +72,10 @@ def run(context, task_name):
     :param task_name: training task to be performed.
     :type task_name: `str`
     """
-    user = ffl.Factory.user(context, task_name=task_name)
+    user = ffl.Factory.user(context)
 
     with user:
-        task_definition = serializer.deserialize(user.task_info()['definition'])
+        task_definition = serializer().deserialize(user.task_info(task_name)['definition'])
 
     participant = ffl.Factory.participant(context, task_name=task_name)
 

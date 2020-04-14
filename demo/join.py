@@ -67,10 +67,10 @@ def join_task(context, task_name):
     :param task_name: name of the task (must be unique).
     :type task_name: `str`
     """
-    user = ffl.Factory.user(context, task_name=task_name)
+    user = ffl.Factory.user(context)
 
     with user:
-        user.join_task()
+        user.join_task(task_name)
 
 
 def get_user_assignments(context):
