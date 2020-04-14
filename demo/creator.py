@@ -88,8 +88,8 @@ def main():
         # create new machine learning task
         task_definition = {"aggregator": "neural_network.Aggregator",
                            "participant": "neural_network.Participant",
-                           "quorum": 1,
-                           "round": 1,
+                           "quorum": 2,
+                           "round": 5,
                            "epoch": 2,
                            "batch_size": 256,
                            "learning_rate": 0.001,
