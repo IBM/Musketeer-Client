@@ -4,4 +4,4 @@ tensorflow==1.15.2
 keras==2.2.5
 scikit-learn
 flask
-git+https://github.com/IBM/pycloudmessenger.git
+git+https://github.com/IBM/pycloudmessenger/archive/v0.3.0.tar.gz

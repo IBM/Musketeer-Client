@@ -133,12 +133,12 @@ class Aggregator(BasicParticipant):
         while not ready:
             try:
                 with self.comms:
-                    result = self.comms.receive(self.timeout)
+                    response = self.comms.receive(self.timeout)
 
             except Exception as err:
                 raise err
 
-            LOGGER.debug(result)
+            LOGGER.debug(response)
 
             if len(results) == self.quorum:
                 ready = True
@@ -153,15 +153,15 @@ class Aggregator(BasicParticipant):
         complete = False
         while not complete:
             try:
-                result = self.comms.receive(self.timeout)
+                response = self.comms.receive(self.timeout)
                 LOGGER.info('Received model update from participant')
 
             except Exception as err:
                 LOGGER.error(err)
                 raise err
 
-            if fflapi.Notification.is_participant_updated(result):
-                results.append(result)
+            if fflapi.Notification.is_participant_updated(response.notification):
+                results.append(response.content)
 
             if len(results) == self.quorum:
                 complete = True
@@ -198,8 +198,8 @@ class Aggregator(BasicParticipant):
 
         import time
         for iter in range(self.round):
-            start = time.time() 
-          
+            start = time.time()
+
             LOGGER.info("Round " + str(iter))
             LOGGER.info('Asking participants to update model weights, do local training and send back model update')
 
@@ -210,7 +210,7 @@ class Aggregator(BasicParticipant):
 
             list_updates = []
             for weight_update in weight_updates:
-                weight = weight_update['params']['updated_weights']
+                weight = weight_update['updated_weights']
                 weight = np.array([np.array(w) for w in weight])
                 list_updates.append(weight)
 
@@ -255,7 +255,7 @@ class Participant(BasicParticipant):
                 msg = self.comms.receive(self.timeout)
                 LOGGER.info("Received model architecture from the aggregator")
 
-            model = model_from_json(msg['params']['model'])
+            model = model_from_json(msg.content['model'])
             model.compile(loss=losses.categorical_crossentropy,
                           optimizer=optimizers.Adam(lr=self.learning_rate),
                           metrics=['accuracy'])
@@ -271,7 +271,7 @@ class Participant(BasicParticipant):
                 LOGGER.info("Round " + str(iter))
                 LOGGER.info('Received model update from the aggregator, start to update local model and train locally')
 
-                weights = msg['params']['weights']
+                weights = msg.content['weights']
                 model.set_weights(weights)
                 model.fit(self.feature, self.label, batch_size=self.batch_size, epochs=self.epoch)
                 updated_weights = model.get_weights()
@@ -287,10 +287,10 @@ class Participant(BasicParticipant):
 
         try:
             with self.comms:
-                result = self.comms.receive(self.timeout)
+                response = self.comms.receive(self.timeout)
 
-            if fflapi.Notification.is_aggregator_stopped(result):
-                weights = result['params']['weights']
+            if fflapi.Notification.is_aggregator_stopped(response.notification):
+                weights = response.content['weights']
                 model.set_weights(weights)
 
                 LOGGER.info('Received the final model from aggregator')

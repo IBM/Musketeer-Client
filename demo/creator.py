@@ -69,10 +69,10 @@ def create_task(context, task_name, task_definition):
     :param task_definition: definition of the task.
     :type task_definition: `dict`
     """
-    user = ffl.Factory.user(context, task_name=task_name)
+    user = ffl.Factory.user(context)
 
     with user:
-        result = user.create_task(ffl.Topology.star, task_definition)
+        result = user.create_task(task_name, ffl.Topology.star, task_definition)
 
     return result
 

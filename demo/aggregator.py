@@ -85,10 +85,10 @@ def run(context, task_name):
     :param task_name: training task to be performed.
     :type task_name: `str`
     """
-    user = ffl.Factory.user(context, task_name=task_name)
+    user = ffl.Factory.user(context)
 
     with user:
-        task_definition = serializer.deserialize(user.task_info()['definition'])
+        task_definition = serializer().deserialize(user.task_info(task_name)['definition'])
 
     aggregator = ffl.Factory.aggregator(context, task_name=task_name)
 
