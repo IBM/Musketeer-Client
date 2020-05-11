@@ -113,6 +113,23 @@ def run(context, task_name):
         LOGGER.error(str(e))
 
 
+def get_participants(context, task_name):
+    """
+    Retrieve a list of all the users participating in the task.
+
+    :param context: context info.
+    :type context: `pycloudmessenger.ffl.abstractions.AbstractContext`
+    :param task_name: training task to be performed.
+    :type task_name: `str`
+    :return: list of all participants.
+    :rtype: `list`
+    """
+    aggregator = ffl.Factory.aggregator(context, task_name=task_name)
+
+    with aggregator:
+        return aggregator.get_participants()
+
+
 def main():
     """
     Main entry point.

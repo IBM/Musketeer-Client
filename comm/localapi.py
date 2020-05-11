@@ -120,7 +120,7 @@ class User(fflabc.AbstractUser, BasicParticipant):
         """
         pass
 
-    def create_task(self, task_name: str, topology, definition):
+    def create_task(self, task_name, topology, definition):
         """
         Creates a task with the given definition and returns a dictionary
         with the details of the created tasks.
@@ -147,7 +147,7 @@ class User(fflabc.AbstractUser, BasicParticipant):
 
         return {task_name: r}
 
-    def task_info(self, task_name: str):
+    def task_info(self, task_name):
         """
         Returns the details of a given task.
         Throws: An exception on failure.
@@ -166,7 +166,7 @@ class User(fflabc.AbstractUser, BasicParticipant):
 
         return definition
 
-    def join_task(self, task_name: str):
+    def join_task(self, task_name):
         """
         As a potential task participant, try to join an existing task that has yet to start.
         Throws: An exception on failure.
@@ -179,7 +179,10 @@ class User(fflabc.AbstractUser, BasicParticipant):
         payload = {'message': self.user}
         r = requests.post(self.path + 'join_task', params=payload)
 
-        return {task_name: r}
+        if r.status_code == requests.codes.ok:
+            return {task_name: r}
+        else:
+            raise Exception('Join task fails because user already joined this task')
 
     def get_tasks(self):
         """
@@ -235,7 +238,7 @@ class Aggregator(fflabc.AbstractAggregator, BasicParticipant):
                                 be returned by receive function.
         :type download_models: `bool`
         """
-        super().__init__(context)
+        super(Aggregator, self).__init__(context)
         self.task_name = task_name
 
     def get_participants(self):
@@ -246,16 +249,14 @@ class Aggregator(fflabc.AbstractAggregator, BasicParticipant):
         :return participant: list of participants.
         :rtype participant: `dict`
         """
-        r = requests.get(self.path + 'get_participants', params={})
-
         global participant_list
 
+        r = requests.get(self.path + 'get_participants', params={})
+
         if r.status_code == requests.codes.ok:
-            participants = json.loads(r.text)['message']
+            participant_list = json.loads(r.text)['message']
         else:
             raise Exception('Unexpected status code when receiving message: %i' % r.status_code)
-
-        participant_list.extend(participants)
 
         return participant_list
 
@@ -271,7 +272,7 @@ class Aggregator(fflabc.AbstractAggregator, BasicParticipant):
         payload = {'message': message}
         requests.post(self.path + 'aggregator_send', json=payload)
 
-    def receive(self, timeout=0):
+    def receive(self, timeout=10):
         """
         Wait for a message to arrive or until timeout period is exceeded.
         Throws: An exception on failure.
@@ -323,11 +324,8 @@ class Participant(fflabc.AbstractParticipant, BasicParticipant):
         :type context: :class:`.Context`
         :param task_name: name of the task (the user needs to be a participant of this task).
         :type task_name: `str`
-        :param download_models: whether downloaded model file name or model url should
-                                be returned by receive function.
-        :type download_models: `bool`
         """
-        super().__init__(context)
+        super(Participant, self).__init__(context)
         self.task_name = task_name
 
     def send(self, message=None):
@@ -342,7 +340,7 @@ class Participant(fflabc.AbstractParticipant, BasicParticipant):
         payload = {'message': message}
         requests.post(self.path + 'participant_send', json=payload)
 
-    def receive(self, timeout=0):
+    def receive(self, timeout=10):
         """
         Wait for a message to arrive or until timeout period is exceeded.
         Throws: An exception on failure.
@@ -353,6 +351,7 @@ class Participant(fflabc.AbstractParticipant, BasicParticipant):
         :rtype: `dict`
         """
         start = time.time()
+
         while time.time() - start < timeout:
             r = requests.get(self.path + 'participant_receive', params={'user': self.user})
 
