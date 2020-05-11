@@ -234,7 +234,7 @@ class Participant(BasicParticipant):
     This class implements the functionality of the participant.
     """
 
-    def __init__(self, task_definition, comms):
+    def __init__(self, task_definition, comms, **kwargs):
         """
         Create a :class:`Participant` instance.
 
