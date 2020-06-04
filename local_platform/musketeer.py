@@ -105,9 +105,13 @@ def aggregator_send():
     global participant_queue
 
     message = request.json['message']
+    participant = request.json['participant']
 
-    for user in participant_queue.keys():
-        participant_queue[user].append(message)
+    if participant is None:
+        for user in participant_queue.keys():
+            participant_queue[user].append(message)
+    else:
+        participant_queue[participant].append(message)
 
     return make_response('', OK)
 
@@ -124,11 +128,11 @@ def aggregator_receive():
         if content[1] is Notification.participant_joined:
             participant_list.append(content[0])
             participant_queue.update({content[0]: []})
-            result = (Notification.participant_joined, content[0])
+            result = {'notification': {'type': Notification.participant_joined, 'participant': content[0]}}
 
         elif content[1] is Notification.participant_updated:
-            msg = {'notification': {'type': Notification.participant_updated}}
-            result = {'params': content[0]}
+            msg = {'notification': {'type': Notification.participant_updated, 'participant': content[0][1]}}
+            result = {'params': content[0][0]}
             result.update(msg)
 
         final_msg = make_response(jsonify({'message': result}), OK)
@@ -146,7 +150,9 @@ def participant_send():
     global aggregator_queue
 
     message = request.json['message']
-    aggregator_queue.append((message, Notification.participant_updated))
+    participant = request.json['participant']
+
+    aggregator_queue.append(((message, participant), Notification.participant_updated))
 
     return make_response('', OK)
 

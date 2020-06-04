@@ -260,16 +260,22 @@ class Aggregator(fflabc.AbstractAggregator, BasicParticipant):
 
         return participant_list
 
-    def send(self, message=None):
+    def send(self, message=None, participant=None):
         """
-        Send a message to all task participants and return immediately (not waiting for a reply).
+        Send a message to all/specific task participants and return immediately (not waiting for a reply).
         Throws: An exception on failure.
 
         :param message: message to be sent (needs to be serializable into json string).
         :type message: `dict`
+        :param participant: participant id.
+        :type participant: `string`
         """
         message = self.serializer.serialize(message)
-        payload = {'message': message}
+        payload = {'message': message, 'participant': participant}
+
+        if participant and participant not in participant_list:
+            raise Exception('User not join task')
+
         requests.post(self.path + 'aggregator_send', json=payload)
 
     def receive(self, timeout=10):
@@ -292,9 +298,10 @@ class Aggregator(fflabc.AbstractAggregator, BasicParticipant):
             if r.status_code == requests.codes.ok:
                 result = r.json()['message']
 
-                if isinstance(result, list) and result[0] == fflabc.Notification.participant_joined:
-                    participant_list.append(result[1])
-                    return fflabc.Response(result, None)
+                if fflabc.Notification.is_participant_joined(result['notification']):
+                    participant_list.append(result['notification']['participant'])
+                    return fflabc.Response(result['notification'], None)
+
                 else:
                     result['params'] = self.serializer.deserialize(result['params'])
                     return fflabc.Response(result['notification'], result['params'])
@@ -337,7 +344,7 @@ class Participant(fflabc.AbstractParticipant, BasicParticipant):
         :type message: `dict`
         """
         message = self.serializer.serialize(message)
-        payload = {'message': message}
+        payload = {'message': message, 'participant': self.user}
         requests.post(self.path + 'participant_send', json=payload)
 
     def receive(self, timeout=10):
