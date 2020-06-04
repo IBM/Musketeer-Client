@@ -273,7 +273,7 @@ class Aggregator(fflabc.AbstractAggregator, BasicParticipant):
         message = self.serializer.serialize(message)
         payload = {'message': message, 'participant': participant}
 
-        if not (participant is None or participant in participant_list):
+        if participant and participant not in participant_list:
             raise Exception('User not join task')
 
         requests.post(self.path + 'aggregator_send', json=payload)
