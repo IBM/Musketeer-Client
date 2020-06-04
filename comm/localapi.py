@@ -268,6 +268,7 @@ class Aggregator(fflabc.AbstractAggregator, BasicParticipant):
         :param message: message to be sent (needs to be serializable into json string).
         :type message: `dict`
         :param participant: participant id.
+        :type participant: `string`
         """
         message = self.serializer.serialize(message)
         payload = {'message': message, 'participant': participant}
