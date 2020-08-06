@@ -1,7 +1,7 @@
-requests
+requests>=2.18.4
 setuptools>=41.0.0
 tensorflow==1.15.2
 keras==2.2.5
 scikit-learn
 flask
-https://github.com/IBM/pycloudmessenger/archive/v0.3.0.tar.gz
+https://github.com/IBM/pycloudmessenger/archive/v0.4.0.tar.gz
