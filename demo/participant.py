@@ -25,7 +25,7 @@ limitations are in force until 30/11/2025.
 """
 
 # to run:
-# python3 participant.py --credentials <> --user <> --password <> --task_name <> --platform <>
+# python3 participant.py --credentials <> --user <> --password <> --task_name <> --platform <> --kwargs <>
 
 import json
 import logging
@@ -58,12 +58,13 @@ def args_parse():
     """
     parser = utils.create_args(description='Musketeer participant')
     parser.add_argument('--task_name', required=True)
+    parser.add_argument('--kwargs', required=False, default=None)
     cmdline = parser.parse_args()
 
     return cmdline
 
 
-def run(context, task_name):
+def run(context, task_name, **kwargs):
     """
     Run the algorithm for the given task as participant.
 
@@ -83,7 +84,7 @@ def run(context, task_name):
     sys.path.append("../fl_algorithm")
 
     alg_class = get_class(task_definition['participant'])
-    algorithm = alg_class(task_definition, participant)
+    algorithm = alg_class(task_definition, participant, **kwargs)
 
     try:
         algorithm.start()
@@ -103,7 +104,10 @@ def main():
         cmdline = args_parse()
         context = utils.platform(cmdline.platform, cmdline.credentials, cmdline.user, cmdline.password)
 
-        run(context, cmdline.task_name)
+        if cmdline.kwargs is not None:
+            run(context, cmdline.task_name, **json.load(cmdline.kwargs))
+        else:
+            run(context, cmdline.task_name)
 
     except Exception as err:
         LOGGER.error('Error: %s', err)
