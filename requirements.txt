@@ -1,6 +1,6 @@
 requests>=2.18.4
 setuptools>=41.0.0
-tensorflow==1.15.2
+tensorflow==2.5.3
 keras==2.2.5
 scikit-learn
 flask
